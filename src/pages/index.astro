@@ -1,16 +1,69 @@
 ---
-
+import Layout from '../layouts/Layout.astro';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Test</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout 
+  title="Anthony Guzzardo – Software Engineer"
+  description="Full-stack, mobile, and backend engineering by Anthony Guzzardo"
+>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <img src="/images/MrFoxSittingLite.png" alt="Fox Logo" class="hero-logo" />
+      <h1 class="hero-title">Hi, I'm Anthony</h1>
+      <p class="tagline">I build full-stack systems, mobile apps, and production-ready infrastructure.</p>
+      <a href="/about" class="hero-cta">Learn More About Me →</a>
+    </div>
+  </section>
+
+  <!-- What I Do -->
+  <section class="services">
+    <div class="container">
+      <h2>What I Work On</h2>
+      <div class="services-grid">
+        <div class="service">
+          <h3>iOS Development</h3>
+          <p>SwiftUI, MapKit, App Store deployments, Vapor backends.</p>
+        </div>
+        <div class="service">
+          <h3>Full-Stack Engineering</h3>
+          <p>React Native, Node.js, TypeScript, PostgreSQL, REST APIs.</p>
+        </div>
+        <div class="service">
+          <h3>Backend & Infrastructure</h3>
+          <p>AWS ECS/Fargate, RDS, VPC isolation, secure and scalable systems.</p>
+        </div>
+        <div class="service">
+          <h3>Product Builds</h3>
+          <p>End-to-end architecture and development for new apps and ideas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Project -->
+  <section class="project">
+    <div class="container">
+      <h2>Highlighted Project</h2>
+      <div class="project-card-horizontal">
+        <img src="/images/PigSticker.png" alt="Rangley App Icon" class="project-icon" />
+        <div class="project-info">
+          <h3>Rangley</h3>
+          <p>A location-based social meetup app for iOS. Built end-to-end: SwiftUI frontend, Vapor backend, AWS deployment.</p>
+          <a href="https://apps.apple.com/us/app/rangley/id6751070400" target="_blank" class="btn">View on App Store →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="contact">
+    <div class="container">
+      <h2>Get in Touch</h2>
+      <p>If you'd like to talk about engineering work or projects, reach out anytime.</p>
+      <a href="mailto:anthonyguzzardo68@gmail.com" class="btn">anthonyguzzardo68@gmail.com</a>
+    </div>
+  </section>
+
+</Layout>

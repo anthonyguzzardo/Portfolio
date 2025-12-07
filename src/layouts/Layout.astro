@@ -1,0 +1,31 @@
+---
+import '../styles/global.css';
+import '../styles/rangley-styles.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+	title: string;
+	description?: string;
+}
+
+const { title, description = 'Anthony Guzzardo - Full-stack Developer' } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+	</head>
+	<body>
+		<Nav />
+		
+		<slot />
+		
+		<Footer />
+	</body>
+</html>
