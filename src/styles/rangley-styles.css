@@ -21,27 +21,12 @@ html {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: radial-gradient(ellipse at top, var(--rangley-purple) 0%, var(--rangley-black) 50%);
+	background: var(--rangley-black);
 	padding: 0 2rem;
 	position: relative;
 	overflow: hidden;
 }
 
-/* Subtle animated gradient background */
-.rangley-hero::before {
-	content: '';
-	position: absolute;
-	width: 150%;
-	height: 150%;
-	background: radial-gradient(circle, rgba(255, 0, 125, 0.15) 0%, transparent 70%);
-	animation: pulse 8s ease-in-out infinite;
-	pointer-events: none;
-}
-
-@keyframes pulse {
-	0%, 100% { transform: scale(1); opacity: 0.5; }
-	50% { transform: scale(1.1); opacity: 0.8; }
-}
 
 .hero-content {
 	max-width: 800px;
@@ -56,10 +41,7 @@ html {
 	line-height: 1.1;
 	margin-bottom: 2rem;
 	letter-spacing: -0.04em;
-	background: linear-gradient(135deg, #fff 0%, var(--rangley-pink) 100%);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-	background-clip: text;
+	color: #fff;
 }
 
 .rangley-hero-subtitle {
@@ -88,17 +70,15 @@ html {
 	color: #fff;
 	text-decoration: none;
 	font-weight: 600;
-	border-radius: 12px;
+	border-radius: 4px;
 	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	border: none;
 	font-size: 1.05rem;
-	box-shadow: 0 4px 24px rgba(255, 0, 125, 0.4);
 }
 
 .btn-primary:hover {
 	background: #e6006e;
 	transform: translateY(-2px);
-	box-shadow: 0 8px 32px rgba(255, 0, 125, 0.6);
 }
 
 .btn-primary svg {
@@ -109,15 +89,14 @@ html {
 	display: inline-flex;
 	align-items: center;
 	padding: 1.25rem 2.5rem;
-	background: rgba(255, 255, 255, 0.05);
+	background: transparent;
 	color: #fff;
 	text-decoration: none;
 	font-weight: 600;
-	border-radius: 12px;
+	border-radius: 4px;
 	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	border: 1px solid #333;
 	font-size: 1.05rem;
-	backdrop-filter: blur(10px);
 }
 
 .btn-secondary:hover {
@@ -153,17 +132,14 @@ html {
 	position: relative;
 }
 
-/* Phone frame with glow effect */
+/* Phone frame */
 .phone-frame {
 	width: 320px;
 	height: 650px;
 	border-radius: 50px;
 	background: var(--rangley-dark-purple);
 	padding: 16px;
-	box-shadow: 
-		0 0 0 1px rgba(255, 255, 255, 0.1),
-		0 0 60px rgba(255, 0, 125, 0.3),
-		0 40px 80px rgba(0, 0, 0, 0.6);
+	box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
 	margin: 0 auto 2rem;
 	overflow: hidden;
 	position: relative;
@@ -175,7 +151,7 @@ html {
 	height: 150px;
 	border-radius: 22px;
 	margin: 0 auto 2rem;
-	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 60px rgba(255, 0, 125, 0.3);
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
 @keyframes float-phone {
@@ -276,8 +252,8 @@ html {
 	width: 100%;
 	max-width: 280px;
 	border-radius: 40px;
-	border: 1px solid rgba(255, 0, 125, 0.2);
-	box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 0, 125, 0.15);
+	border: 1px solid #333;
+	box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
 	transition: transform 0.3s ease;
 }
 
@@ -288,7 +264,7 @@ html {
 /* Stats Section - Cleaner */
 .rangley-stats {
 	padding: 8rem 2rem;
-	background: linear-gradient(180deg, var(--rangley-black) 0%, var(--rangley-dark-purple) 100%);
+	background: var(--rangley-black);
 }
 
 .stats-grid {
@@ -310,7 +286,7 @@ html {
 
 .stat-card:hover {
 	background: rgba(255, 255, 255, 0.05);
-	border-color: rgba(255, 0, 125, 0.3);
+	border-color: #444;
 	transform: translateY(-4px);
 }
 
@@ -329,38 +305,21 @@ html {
 	letter-spacing: 0.05em;
 }
 
-/* Final CTA Section - Full Impact */
+/* Final CTA Section */
 .rangley-cta {
 	min-height: 80vh;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: radial-gradient(ellipse at center, var(--rangley-purple) 0%, var(--rangley-black) 70%);
+	background: var(--rangley-black);
 	padding: 8rem 2rem;
 	text-align: center;
 	position: relative;
-	overflow: hidden;
-}
-
-.rangley-cta::before {
-	content: '';
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	background: radial-gradient(circle at 50% 50%, rgba(255, 0, 125, 0.1) 0%, transparent 50%);
-	animation: pulse-glow 6s ease-in-out infinite;
-}
-
-@keyframes pulse-glow {
-	0%, 100% { opacity: 0.5; transform: scale(1); }
-	50% { opacity: 1; transform: scale(1.05); }
 }
 
 .cta-content {
 	max-width: 700px;
 	margin: 0 auto;
-	position: relative;
-	z-index: 1;
 }
 
 .cta-heading {
