@@ -83,9 +83,16 @@
   // ============================================
   function getThemeColors() {
     const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-    return theme === 'light'
-      ? { text: '#111111', bg: 'transparent' }
-      : { text: '#ffffff', bg: 'transparent' };
+    const isLight = theme === 'light';
+    return {
+      text: isLight ? '#111111' : '#ffffff',
+      bg: 'transparent',
+      isLight
+    };
+  }
+
+  function isLightTheme(): boolean {
+    return (document.documentElement.getAttribute('data-theme') || 'dark') === 'light';
   }
 
   // ============================================
@@ -179,6 +186,7 @@
     uniform vec2 uTextureSize;
     uniform float uPixelSize;
     uniform float uHover;
+    uniform float uIsLightTheme;
     varying vec2 vUv;
     varying vec2 vWorldPos;
 
@@ -280,12 +288,16 @@
 
         ledColor = vec3(texR.r, texColor.g, texB.b);
 
-        // Hot orange/red tint in destruction zone
-        vec3 riftTint = vec3(0.95, 0.3, 0.1);
-        ledColor = mix(ledColor, riftTint, riftZone * 0.6);
+        // Hot orange/red tint in destruction zone - darker for light theme
+        vec3 riftTintDark = vec3(0.95, 0.3, 0.1);
+        vec3 riftTintLight = vec3(0.8, 0.2, 0.05);
+        vec3 riftTint = mix(riftTintDark, riftTintLight, uIsLightTheme);
+        float tintStrength = mix(0.6, 0.75, uIsLightTheme);
+        ledColor = mix(ledColor, riftTint, riftZone * tintStrength);
 
-        // Boost brightness in rift
-        ledColor *= 1.0 + riftZone * 0.8;
+        // Boost brightness in rift (less boost in light theme)
+        float brightnessBoost = mix(0.8, 0.3, uIsLightTheme);
+        ledColor *= 1.0 + riftZone * brightnessBoost;
       }
 
       // === FINAL COMPOSITE ===
@@ -300,9 +312,15 @@
 
       vec4 color = vec4(ledColor, alpha);
 
-      // Hover brightness boost - much more noticeable
-      color.rgb *= 1.0 + uHover * 1.2;
-      color.rgb = mix(color.rgb, vec3(1.0, 0.95, 0.8), uHover * 0.3);
+      // Hover effect - different for light vs dark theme
+      if (uIsLightTheme > 0.5) {
+        // Light theme: warm orange glow, slight darkening for contrast
+        color.rgb = mix(color.rgb, vec3(0.9, 0.4, 0.1), uHover * 0.5);
+      } else {
+        // Dark theme: brighten toward warm white
+        color.rgb *= 1.0 + uHover * 1.2;
+        color.rgb = mix(color.rgb, vec3(1.0, 0.95, 0.8), uHover * 0.3);
+      }
 
       // Vertical fade at edges
       float edgeFade = smoothstep(0.0, 0.25, vUv.y) * smoothstep(1.0, 0.75, vUv.y);
@@ -384,6 +402,7 @@
           uTextureSize: { value: new THREE.Vector2(texWidth, texHeight) },
           uPixelSize: { value: pixelSize },
           uHover: { value: 0.0 },
+          uIsLightTheme: { value: isLightTheme() ? 1.0 : 0.0 },
         },
         vertexShader,
         fragmentShader,
@@ -424,6 +443,7 @@
     uniforms: {
       uTime: { value: 0 },
       uResolution: { value: new THREE.Vector2(glowWidth, glowHeight) },
+      uIsLightTheme: { value: isLightTheme() ? 1.0 : 0.0 },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -435,6 +455,7 @@
     fragmentShader: `
       uniform float uTime;
       uniform vec2 uResolution;
+      uniform float uIsLightTheme;
       varying vec2 vUv;
 
       float hash(vec2 p) {
@@ -476,17 +497,26 @@
         // Slight variation per pixel
         float pixelVariation = hash(cellIndex) * 0.15 + 0.85;
 
-        // === COLOR GRADIENT ===
-        // Bright yellow/green core
-        vec3 coreColor = vec3(0.95, 0.92, 0.3);
-        // Yellow/gold inner
-        vec3 innerColor = vec3(0.9, 0.75, 0.15);
-        // Orange mid
-        vec3 midColor = vec3(0.95, 0.45, 0.08);
-        // Dark red/orange outer
-        vec3 outerColor = vec3(0.7, 0.15, 0.02);
-        // Deep red edge
-        vec3 edgeColor = vec3(0.4, 0.05, 0.01);
+        // === COLOR GRADIENT - theme aware ===
+        // Dark theme: bright warm colors for additive blending
+        // Light theme: darker, more saturated colors for normal blending
+        vec3 coreColor, innerColor, midColor, outerColor, edgeColor;
+
+        if (uIsLightTheme > 0.5) {
+          // Light theme - richer, darker colors that show on light bg
+          coreColor = vec3(0.95, 0.7, 0.1);
+          innerColor = vec3(0.9, 0.5, 0.05);
+          midColor = vec3(0.85, 0.3, 0.02);
+          outerColor = vec3(0.6, 0.12, 0.01);
+          edgeColor = vec3(0.35, 0.05, 0.0);
+        } else {
+          // Dark theme - original bright colors
+          coreColor = vec3(0.95, 0.92, 0.3);
+          innerColor = vec3(0.9, 0.75, 0.15);
+          midColor = vec3(0.95, 0.45, 0.08);
+          outerColor = vec3(0.7, 0.15, 0.02);
+          edgeColor = vec3(0.4, 0.05, 0.01);
+        }
 
         // Build color based on distance from center
         vec3 color = edgeColor;
@@ -503,9 +533,8 @@
         float centerBoost = 1.0 - smoothstep(0.0, 0.2, absX);
         centerBoost = centerBoost * 0.5 + 1.0;
 
-        // Vertical intensity falloff (dimmer at top/bottom) - less aggressive
-        float verticalFade = 1.0 - pow(absY * 1.6, 2.0);
-        verticalFade = max(0.0, verticalFade);
+        // Vertical intensity falloff - smooth taper to zero at edges
+        float verticalFade = 1.0 - smoothstep(0.25, 0.5, absY);
 
         // Combine
         float intensity = diamondMask * verticalFade * centerBoost;
@@ -515,15 +544,16 @@
         float flicker = 0.95 + 0.05 * sin(uTime * 3.0 + hash(cellIndex) * 6.28);
         intensity *= flicker;
 
-        // Boost overall brightness
-        intensity *= 0.85;
+        // Boost overall brightness - more for light theme since normal blending is less impactful
+        float brightnessMultiplier = mix(0.85, 1.2, uIsLightTheme);
+        intensity *= brightnessMultiplier;
 
         gl_FragColor = vec4(color * intensity, intensity);
       }
     `,
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    blending: isLightTheme() ? THREE.NormalBlending : THREE.AdditiveBlending,
   });
 
   const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
@@ -607,16 +637,24 @@
   // ============================================
   canvas.style.cursor = 'pointer';
 
-  function getItemAtPosition(clientX: number): ProjectMesh | null {
+  function getItemAtPosition(clientX: number, clientY: number): ProjectMesh | null {
     const rect = canvas.getBoundingClientRect();
-    const mouseX = clientX - rect.left - width / 2;
+    // X: canvas center = scene X 0
+    const mouseX = clientX - rect.left - rect.width / 2;
+    // Y: canvas center = scene Y 0, Y increases upward in scene
+    const mouseY = (rect.height / 2) - (clientY - rect.top);
 
     for (const item of projectMeshes) {
-      // Use actual content width for hit detection
-      const meshLeft = item.mesh.position.x - item.hitWidth / 2;
-      const meshRight = item.mesh.position.x + item.hitWidth / 2;
+      // Horizontal bounds using hitWidth
+      const halfHitWidth = item.hitWidth / 2;
+      // Vertical bounds - add some padding for easier interaction
+      const halfHeight = item.height / 2 + 20;
 
-      if (mouseX >= meshLeft && mouseX <= meshRight) {
+      const meshX = item.mesh.position.x;
+      const meshY = item.mesh.position.y;
+
+      if (mouseX >= meshX - halfHitWidth && mouseX <= meshX + halfHitWidth &&
+          mouseY >= meshY - halfHeight && mouseY <= meshY + halfHeight) {
         return item;
       }
     }
@@ -624,7 +662,7 @@
   }
 
   canvas.addEventListener('mousemove', (e) => {
-    hoveredItem = getItemAtPosition(e.clientX);
+    hoveredItem = getItemAtPosition(e.clientX, e.clientY);
   });
 
   canvas.addEventListener('mouseleave', () => {
@@ -632,7 +670,7 @@
   });
 
   canvas.addEventListener('click', (e) => {
-    const item = getItemAtPosition(e.clientX);
+    const item = getItemAtPosition(e.clientX, e.clientY);
     if (item) {
       if (item.link.startsWith('http')) {
         window.open(item.link, '_blank');
@@ -646,8 +684,13 @@
   // THEME CHANGE
   // ============================================
   const observer = new MutationObserver(() => {
+    const lightTheme = isLightTheme();
+
     projectMeshes.forEach((item) => {
-      // Skip image items - they don't change with theme
+      // Update theme uniform for all items
+      item.material.uniforms.uIsLightTheme.value = lightTheme ? 1.0 : 0.0;
+
+      // Skip texture update for image items - they don't change with theme
       if (item.project.isImage) return;
 
       const newTexture = createTextTexture(item.project.name, fontSize);
@@ -655,6 +698,11 @@
       item.material.uniforms.uTexture.value = newTexture;
       item.material.uniforms.uTextureSize.value.set(newTexture.image.width, newTexture.image.height);
     });
+
+    // Update glow for theme
+    glowMaterial.uniforms.uIsLightTheme.value = lightTheme ? 1.0 : 0.0;
+    glowMaterial.blending = lightTheme ? THREE.NormalBlending : THREE.AdditiveBlending;
+    glowMaterial.needsUpdate = true;
   });
 
   observer.observe(document.documentElement, {
