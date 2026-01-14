@@ -21,10 +21,11 @@ html {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: var(--rangley-black);
+	background: var(--bg-primary);
 	padding: 0 2rem;
 	position: relative;
 	overflow: hidden;
+	transition: background 0.3s ease;
 }
 
 
@@ -41,15 +42,17 @@ html {
 	line-height: 1.1;
 	margin-bottom: 2rem;
 	letter-spacing: -0.04em;
-	color: #fff;
+	color: var(--text-primary);
+	transition: color 0.3s ease;
 }
 
 .rangley-hero-subtitle {
 	font-size: clamp(1.1rem, 3vw, 1.5rem);
-	color: #b3b3b3;
+	color: var(--text-secondary);
 	line-height: 1.7;
 	margin-bottom: 3rem;
 	font-weight: 400;
+	transition: color 0.3s ease;
 }
 
 .hero-cta-group {
@@ -90,12 +93,12 @@ html {
 	align-items: center;
 	padding: 1.25rem 2.5rem;
 	background: transparent;
-	color: #fff;
+	color: var(--text-primary);
 	text-decoration: none;
 	font-weight: 600;
 	border-radius: 4px;
-	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-	border: 1px solid #333;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease, border-color 0.3s ease;
+	border: 1px solid var(--border-light);
 	font-size: 1.05rem;
 }
 
@@ -115,9 +118,10 @@ html {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: var(--rangley-black);
+	background: var(--bg-primary);
 	padding: 4rem 2rem;
 	position: relative;
+	transition: background 0.3s ease;
 }
 
 .demo-window {
@@ -168,7 +172,7 @@ html {
 	transform: translateX(-50%);
 	width: 120px;
 	height: 30px;
-	background: var(--rangley-black);
+	background: var(--bg-primary);
 	border-radius: 0 0 20px 20px;
 	z-index: 10;
 }
@@ -183,16 +187,18 @@ html {
 }
 
 .demo-caption {
-	color: #808080;
+	color: var(--text-muted);
 	font-size: 1rem;
 	margin-top: 2rem;
 	font-weight: 500;
+	transition: color 0.3s ease;
 }
 
 /* Features Section - Clean Grid */
 .rangley-features {
 	padding: 10rem 2rem;
-	background: var(--rangley-black);
+	background: var(--bg-primary);
+	transition: background 0.3s ease;
 }
 
 .features-heading {
@@ -200,8 +206,9 @@ html {
 	font-size: clamp(2.5rem, 6vw, 4rem);
 	font-weight: 700;
 	margin-bottom: 8rem;
-	color: #fff;
+	color: var(--text-primary);
 	letter-spacing: -0.02em;
+	transition: color 0.3s ease;
 }
 
 .feature-block {
@@ -231,15 +238,17 @@ html {
 	font-size: clamp(1.75rem, 4vw, 2.5rem);
 	font-weight: 700;
 	margin-bottom: 1.5rem;
-	color: #fff;
+	color: var(--text-primary);
 	letter-spacing: -0.02em;
+	transition: color 0.3s ease;
 }
 
 .feature-content p {
 	font-size: 1.15rem;
 	line-height: 1.8;
-	color: #999;
+	color: var(--text-secondary);
 	font-weight: 400;
+	transition: color 0.3s ease;
 }
 
 .feature-visual {
@@ -252,8 +261,8 @@ html {
 	width: 100%;
 	max-width: 280px;
 	border-radius: 40px;
-	border: 1px solid #333;
-	box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+	border: 1px solid var(--border-light);
+	box-shadow: 0 30px 60px var(--shadow-color);
 	transition: transform 0.3s ease;
 }
 
@@ -264,7 +273,8 @@ html {
 /* Stats Section - Cleaner */
 .rangley-stats {
 	padding: 8rem 2rem;
-	background: var(--rangley-black);
+	background: var(--bg-primary);
+	transition: background 0.3s ease;
 }
 
 .stats-grid {
@@ -279,14 +289,14 @@ html {
 	text-align: center;
 	padding: 2rem;
 	border-radius: 16px;
-	background: rgba(255, 255, 255, 0.02);
-	border: 1px solid rgba(255, 255, 255, 0.05);
+	background: var(--bg-card);
+	border: 1px solid var(--border-color);
 	transition: all 0.3s ease;
 }
 
 .stat-card:hover {
-	background: rgba(255, 255, 255, 0.05);
-	border-color: #444;
+	background: var(--bg-card-hover);
+	border-color: var(--border-light);
 	transform: translateY(-4px);
 }
 
@@ -300,9 +310,10 @@ html {
 
 .stat-label {
 	font-size: 1rem;
-	color: #999;
+	color: var(--text-secondary);
 	font-weight: 500;
 	letter-spacing: 0.05em;
+	transition: color 0.3s ease;
 }
 
 /* Final CTA Section */
@@ -311,10 +322,11 @@ html {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: var(--rangley-black);
+	background: var(--bg-primary);
 	padding: 8rem 2rem;
 	text-align: center;
 	position: relative;
+	transition: background 0.3s ease;
 }
 
 .cta-content {
@@ -327,21 +339,24 @@ html {
 	font-weight: 700;
 	margin-bottom: 2rem;
 	line-height: 1.1;
-	color: #fff;
+	color: var(--text-primary);
 	letter-spacing: -0.03em;
+	transition: color 0.3s ease;
 }
 
 .cta-subtitle {
 	font-size: clamp(1.1rem, 3vw, 1.4rem);
-	color: #b3b3b3;
+	color: var(--text-secondary);
 	margin-bottom: 3rem;
 	font-weight: 400;
+	transition: color 0.3s ease;
 }
 
 .cta-note {
 	margin-top: 2rem;
-	color: #808080;
+	color: var(--text-muted);
 	font-size: 1rem;
+	transition: color 0.3s ease;
 }
 
 .cta-link {
@@ -352,7 +367,7 @@ html {
 }
 
 .cta-link:hover {
-	color: #fff;
+	color: var(--text-primary);
 }
 
 /* Mobile Responsive - IMPROVED */

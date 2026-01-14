@@ -1,0 +1,549 @@
+---
+// ProjectCarousel.astro - Infinite scrolling with center LED pixelation rift
+---
+
+<div class="carousel-section">
+  <canvas id="carousel-canvas"></canvas>
+</div>
+
+<style>
+  .carousel-section {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    background: var(--bg-primary);
+    transition: background 0.3s ease;
+    overflow: visible;
+  }
+
+  #carousel-canvas {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 300%;
+    display: block;
+    pointer-events: auto;
+  }
+
+  @media (max-width: 768px) {
+    .carousel-section {
+      height: 120px;
+    }
+  }
+</style>
+
+<script>
+  import * as THREE from 'three';
+
+  const projects = [
+    { name: 'DEALIFIER', link: 'https://dealifier.com' },
+    { name: 'RANGLEY', link: '/rangley' },
+    { name: 'SPACE CALCULATOR', link: 'https://alkaline-89z.pages.dev' },
+  ];
+
+  // ============================================
+  // SETUP
+  // ============================================
+  const canvas = document.getElementById('carousel-canvas') as HTMLCanvasElement;
+  const container = canvas.parentElement as HTMLElement;
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: false, // Disable for crisp pixels
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+
+  let width = container.clientWidth;
+  let height = container.clientHeight * 3; // Canvas is 300% height
+
+  const camera = new THREE.OrthographicCamera(
+    -width / 2, width / 2,
+    height / 2, -height / 2,
+    -1000, 1000
+  );
+  camera.position.z = 100;
+
+  // ============================================
+  // THEME COLORS
+  // ============================================
+  function getThemeColors() {
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    return theme === 'light'
+      ? { text: '#111111', bg: 'transparent' }
+      : { text: '#ffffff', bg: 'transparent' };
+  }
+
+  // ============================================
+  // CREATE TEXT TEXTURE
+  // ============================================
+  function createTextTexture(text: string, fontSize: number): THREE.CanvasTexture {
+    const colors = getThemeColors();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+
+    ctx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+    const metrics = ctx.measureText(text);
+
+    canvas.width = Math.ceil(metrics.width + 40);
+    canvas.height = Math.ceil(fontSize * 1.4);
+
+    ctx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+    ctx.fillStyle = colors.text;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 20, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.NearestFilter;
+    texture.magFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+
+    return texture;
+  }
+
+  // ============================================
+  // LED PIXELATION SHADER
+  // ============================================
+  const vertexShader = `
+    varying vec2 vUv;
+    varying vec2 vWorldPos;
+
+    void main() {
+      vUv = uv;
+      vec4 worldPos = modelMatrix * vec4(position, 1.0);
+      vWorldPos = worldPos.xy;
+      gl_Position = projectionMatrix * viewMatrix * worldPos;
+    }
+  `;
+
+  const fragmentShader = `
+    uniform sampler2D uTexture;
+    uniform float uTime;
+    uniform float uScreenWidth;
+    uniform vec2 uTextureSize;
+    uniform float uPixelSize;
+    varying vec2 vUv;
+    varying vec2 vWorldPos;
+
+    // Hash functions for randomness
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    }
+
+    float hash2(vec2 p) {
+      return fract(sin(dot(p, vec2(269.5, 183.3))) * 43758.5453);
+    }
+
+    void main() {
+      // Elliptical rift zone
+      float riftWidth = uScreenWidth * 0.12;
+      float riftHeight = uTextureSize.y * 0.5;
+
+      vec2 riftPos = vec2(vWorldPos.x / riftWidth, vWorldPos.y / riftHeight);
+      float distFromCenter = length(riftPos);
+
+      // Rift intensity: 1 at center, 0 outside
+      float riftZone = 1.0 - smoothstep(0.0, 1.0, distFromCenter);
+
+      // === ALWAYS LED PIXELS ===
+      vec2 texelSize = vec2(1.0) / uTextureSize;
+      float pixelSize = uPixelSize;
+
+      // Snap UV to pixel grid
+      vec2 gridUV = floor(vUv / texelSize / pixelSize);
+      vec2 pixelUV = gridUV * texelSize * pixelSize + texelSize * pixelSize * 0.5;
+
+      // === RIFT DISTORTION (subtle) ===
+      vec2 sampleUV = pixelUV;
+
+      if (riftZone > 0.0) {
+        // Gentle scatter
+        float scatterIntensity = riftZone * 0.02;
+        float noiseX = (hash(gridUV + floor(uTime * 2.0)) - 0.5);
+        float noiseY = (hash2(gridUV + floor(uTime * 2.0)) - 0.5);
+
+        sampleUV += vec2(noiseX, noiseY) * scatterIntensity;
+
+        // Subtle wave
+        float wave = sin(gridUV.x * 0.3 + uTime * 2.0) * 0.01 * riftZone;
+        sampleUV.y += wave;
+      }
+
+      sampleUV = clamp(sampleUV, 0.0, 1.0);
+
+      // Sample texture
+      vec4 texColor = texture2D(uTexture, sampleUV);
+
+      // === LED DOT RENDERING ===
+      vec2 pixelPos = fract(vUv / texelSize / pixelSize);
+
+      // Subtle dot jitter in rift
+      if (riftZone > 0.0) {
+        float jitter = riftZone * 0.1;
+        pixelPos.x += (hash(gridUV * 7.0) - 0.5) * jitter;
+        pixelPos.y += (hash2(gridUV * 7.0) - 0.5) * jitter;
+      }
+
+      float dotDist = length(pixelPos - 0.5);
+
+      // LED dot shape - rounder, more visible gaps
+      float dotRadius = 0.38;
+      float dotSoftness = 0.08;
+
+      // Dots shrink and become erratic in rift
+      dotRadius -= riftZone * 0.15;
+      dotSoftness += riftZone * 0.1;
+
+      float dot = 1.0 - smoothstep(dotRadius - dotSoftness, dotRadius, dotDist);
+
+      // === LED GLOW (subtle bloom around dots) ===
+      float glowRadius = 0.6;
+      float dotGlow = (1.0 - smoothstep(dotRadius, glowRadius, dotDist)) * 0.15;
+
+      // === FLICKER & GLITCH ===
+      float flicker = 1.0;
+      if (riftZone > 0.2) {
+        // Occasional pixel flicker
+        float flickerChance = riftZone * 0.15;
+        flicker = hash(gridUV + floor(uTime * 8.0)) > flickerChance ? 1.0 : 0.7;
+
+        // Rare bright pixels
+        float stuckOn = hash(gridUV * 3.0) > 0.99 ? 1.3 : 1.0;
+        flicker *= stuckOn;
+      }
+
+      // === COLOR ===
+      vec3 ledColor = texColor.rgb;
+
+      // Chromatic aberration in rift
+      if (riftZone > 0.0) {
+        float aberration = riftZone * 0.025;
+        vec4 texR = texture2D(uTexture, sampleUV + vec2(aberration, 0.0));
+        vec4 texB = texture2D(uTexture, sampleUV - vec2(aberration, 0.0));
+
+        ledColor = vec3(texR.r, texColor.g, texB.b);
+
+        // Hot orange/red tint in destruction zone
+        vec3 riftTint = vec3(0.95, 0.3, 0.1);
+        ledColor = mix(ledColor, riftTint, riftZone * 0.6);
+
+        // Boost brightness in rift
+        ledColor *= 1.0 + riftZone * 0.8;
+      }
+
+      // === FINAL COMPOSITE ===
+      float alpha = texColor.a * dot * flicker;
+
+      // Add glow
+      alpha = max(alpha, texColor.a * dotGlow);
+
+      // Random dead pixels outside rift (subtle LED imperfection)
+      float deadPixel = hash(gridUV * 13.0) > 0.995 ? 0.3 : 1.0;
+      alpha *= deadPixel;
+
+      vec4 color = vec4(ledColor, alpha);
+
+      // Vertical fade at edges
+      float edgeFade = smoothstep(0.0, 0.25, vUv.y) * smoothstep(1.0, 0.75, vUv.y);
+      color.a *= edgeFade;
+
+      gl_FragColor = color;
+    }
+  `;
+
+  // ============================================
+  // CREATE PROJECT MESHES
+  // ============================================
+  interface ProjectMesh {
+    mesh: THREE.Mesh;
+    material: THREE.ShaderMaterial;
+    width: number;
+    height: number;
+    link: string;
+  }
+
+  const projectMeshes: ProjectMesh[] = [];
+  const fontSize = Math.min(100, width * 0.1);
+  const gap = 120;
+  const pixelSize = 3.0; // Size of LED pixels
+
+  // Calculate total width
+  let totalWidth = 0;
+  const tempCanvas = document.createElement('canvas');
+  const tempCtx = tempCanvas.getContext('2d')!;
+  tempCtx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+
+  projects.forEach(p => {
+    totalWidth += Math.ceil(tempCtx.measureText(p.name).width + 40) + gap;
+  });
+
+  // Create copies for seamless loop
+  const copies = Math.ceil((width * 4) / totalWidth) + 2;
+  let xOffset = -totalWidth;
+
+  for (let copy = 0; copy < copies; copy++) {
+    projects.forEach((project) => {
+      const texture = createTextTexture(project.name, fontSize);
+      const texWidth = texture.image.width;
+      const texHeight = texture.image.height;
+
+      const material = new THREE.ShaderMaterial({
+        uniforms: {
+          uTexture: { value: texture },
+          uTime: { value: 0 },
+          uScreenWidth: { value: width },
+          uTextureSize: { value: new THREE.Vector2(texWidth, texHeight) },
+          uPixelSize: { value: pixelSize },
+        },
+        vertexShader,
+        fragmentShader,
+        transparent: true,
+        depthWrite: false,
+      });
+
+      const geometry = new THREE.PlaneGeometry(texWidth, texHeight);
+      const mesh = new THREE.Mesh(geometry, material);
+
+      mesh.position.x = xOffset + texWidth / 2;
+      mesh.position.y = 0;
+      mesh.userData.baseX = mesh.position.x;
+
+      scene.add(mesh);
+      projectMeshes.push({
+        mesh,
+        material,
+        width: texWidth,
+        height: texHeight,
+        link: project.link
+      });
+
+      xOffset += texWidth + gap;
+    });
+  }
+
+  // ============================================
+  // CENTER GLOW EFFECT - LED PIXEL RIFT
+  // ============================================
+  const glowWidth = 600;
+  const glowHeight = height * 0.85; // Fills most of the extended canvas
+
+  const glowGeometry = new THREE.PlaneGeometry(glowWidth, glowHeight);
+  const glowMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uResolution: { value: new THREE.Vector2(glowWidth, glowHeight) },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform vec2 uResolution;
+      varying vec2 vUv;
+
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+      }
+
+      void main() {
+        vec2 center = vUv - 0.5;
+
+        // Diamond/eye shape - vertical columns meeting at center
+        float absX = abs(center.x);
+        float absY = abs(center.y);
+
+        // Create the diamond envelope - tighter at top/bottom, wider at middle
+        float diamondDist = absX * 1.8 + absY * 1.0;
+
+        // Also use radial for the glow falloff (wider spread)
+        float radialDist = length(vec2(center.x * 1.5, center.y * 0.7));
+
+        // === LED PIXEL GRID ===
+        float pixelWidth = 3.0;  // Width of each LED column
+        float pixelHeight = 4.0; // Height of each LED row
+        float gapX = 1.5;        // Gap between columns
+        float gapY = 1.0;        // Gap between rows
+
+        // Calculate pixel coordinates
+        float cellWidth = pixelWidth + gapX;
+        float cellHeight = pixelHeight + gapY;
+
+        vec2 pixelCoord = vUv * uResolution;
+        vec2 cellPos = mod(pixelCoord, vec2(cellWidth, cellHeight));
+        vec2 cellIndex = floor(pixelCoord / vec2(cellWidth, cellHeight));
+
+        // Is this pixel inside an LED dot?
+        float inPixelX = step(cellPos.x, pixelWidth);
+        float inPixelY = step(cellPos.y, pixelHeight);
+        float inPixel = inPixelX * inPixelY;
+
+        // Slight variation per pixel
+        float pixelVariation = hash(cellIndex) * 0.15 + 0.85;
+
+        // === COLOR GRADIENT ===
+        // Bright yellow/green core
+        vec3 coreColor = vec3(0.95, 0.92, 0.3);
+        // Yellow/gold inner
+        vec3 innerColor = vec3(0.9, 0.75, 0.15);
+        // Orange mid
+        vec3 midColor = vec3(0.95, 0.45, 0.08);
+        // Dark red/orange outer
+        vec3 outerColor = vec3(0.7, 0.15, 0.02);
+        // Deep red edge
+        vec3 edgeColor = vec3(0.4, 0.05, 0.01);
+
+        // Build color based on distance from center
+        vec3 color = edgeColor;
+        color = mix(color, outerColor, smoothstep(0.5, 0.35, radialDist));
+        color = mix(color, midColor, smoothstep(0.35, 0.22, radialDist));
+        color = mix(color, innerColor, smoothstep(0.22, 0.1, radialDist));
+        color = mix(color, coreColor, smoothstep(0.1, 0.0, radialDist));
+
+        // === INTENSITY ===
+        // Diamond falloff - more gradual for wider spread
+        float diamondMask = 1.0 - smoothstep(0.25, 0.7, diamondDist);
+
+        // Extra brightness in center column
+        float centerBoost = 1.0 - smoothstep(0.0, 0.2, absX);
+        centerBoost = centerBoost * 0.5 + 1.0;
+
+        // Vertical intensity falloff (dimmer at top/bottom) - less aggressive
+        float verticalFade = 1.0 - pow(absY * 1.6, 2.0);
+        verticalFade = max(0.0, verticalFade);
+
+        // Combine
+        float intensity = diamondMask * verticalFade * centerBoost;
+        intensity *= inPixel * pixelVariation;
+
+        // Subtle flicker
+        float flicker = 0.95 + 0.05 * sin(uTime * 3.0 + hash(cellIndex) * 6.28);
+        intensity *= flicker;
+
+        // Boost overall brightness
+        intensity *= 0.85;
+
+        gl_FragColor = vec4(color * intensity, intensity);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+
+  const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+  glowMesh.position.z = 50;
+  scene.add(glowMesh);
+
+  // ============================================
+  // ANIMATION
+  // ============================================
+  let scrollX = 0;
+  const scrollSpeed = 1.2;
+  let time = 0;
+  let lastTime = performance.now();
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const now = performance.now();
+    const delta = Math.min((now - lastTime) / 16.67, 3);
+    lastTime = now;
+
+    time += 0.016 * delta;
+    scrollX += scrollSpeed * delta;
+
+    if (scrollX > totalWidth) {
+      scrollX -= totalWidth;
+    }
+
+    const wrapWidth = totalWidth * copies;
+
+    projectMeshes.forEach((item) => {
+      let x = item.mesh.userData.baseX - scrollX;
+
+      // Wrap around
+      x = ((x % wrapWidth) + wrapWidth) % wrapWidth;
+      x -= wrapWidth / 2;
+
+      item.mesh.position.x = x;
+      item.material.uniforms.uTime.value = time;
+      item.material.uniforms.uScreenWidth.value = width;
+    });
+
+    glowMaterial.uniforms.uTime.value = time;
+
+    renderer.render(scene, camera);
+  }
+
+  // ============================================
+  // RESIZE
+  // ============================================
+  function onResize() {
+    width = container.clientWidth;
+    height = container.clientHeight * 3; // Canvas is 300% height
+
+    renderer.setSize(width, height);
+
+    camera.left = -width / 2;
+    camera.right = width / 2;
+    camera.top = height / 2;
+    camera.bottom = -height / 2;
+    camera.updateProjectionMatrix();
+  }
+
+  window.addEventListener('resize', onResize);
+  onResize();
+
+  // ============================================
+  // CLICK HANDLING
+  // ============================================
+  canvas.style.cursor = 'pointer';
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left - width / 2;
+
+    for (const item of projectMeshes) {
+      const meshLeft = item.mesh.position.x - item.width / 2;
+      const meshRight = item.mesh.position.x + item.width / 2;
+
+      if (clickX >= meshLeft && clickX <= meshRight) {
+        if (item.link.startsWith('http')) {
+          window.open(item.link, '_blank');
+        } else {
+          window.location.href = item.link;
+        }
+        break;
+      }
+    }
+  });
+
+  // ============================================
+  // THEME CHANGE
+  // ============================================
+  const observer = new MutationObserver(() => {
+    projectMeshes.forEach((item, index) => {
+      const projectIndex = index % projects.length;
+      const newTexture = createTextTexture(projects[projectIndex].name, fontSize);
+      item.material.uniforms.uTexture.value.dispose();
+      item.material.uniforms.uTexture.value = newTexture;
+      item.material.uniforms.uTextureSize.value.set(newTexture.image.width, newTexture.image.height);
+    });
+  });
+
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme']
+  });
+
+  animate();
+</script>
