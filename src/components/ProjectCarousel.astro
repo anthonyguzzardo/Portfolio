@@ -11,10 +11,10 @@
     position: relative;
     width: 100%;
     height: 200px;
-    background: var(--bg-primary);
+    background: transparent;
     transition: background 0.3s ease;
     overflow: visible;
-    margin-top: 10rem;
+    margin-top: 12rem;
   }
 
   #carousel-canvas {
@@ -23,7 +23,7 @@
     top: 50%;
     transform: translateY(-50%);
     width: 100%;
-    height: 300%;
+    height: 500%;
     display: block;
     pointer-events: auto;
   }
@@ -69,7 +69,7 @@
   const scene = new THREE.Scene();
 
   let width = container.clientWidth;
-  let height = container.clientHeight * 3; // Canvas is 300% height
+  let height = container.clientHeight * 5; // Canvas is 500% height
 
   const camera = new THREE.OrthographicCamera(
     -width / 2, width / 2,
@@ -178,6 +178,7 @@
     uniform float uScreenWidth;
     uniform vec2 uTextureSize;
     uniform float uPixelSize;
+    uniform float uHover;
     varying vec2 vUv;
     varying vec2 vWorldPos;
 
@@ -299,6 +300,10 @@
 
       vec4 color = vec4(ledColor, alpha);
 
+      // Hover brightness boost - much more noticeable
+      color.rgb *= 1.0 + uHover * 1.2;
+      color.rgb = mix(color.rgb, vec3(1.0, 0.95, 0.8), uHover * 0.3);
+
       // Vertical fade at edges
       float edgeFade = smoothstep(0.0, 0.25, vUv.y) * smoothstep(1.0, 0.75, vUv.y);
       color.a *= edgeFade;
@@ -315,6 +320,7 @@
     material: THREE.ShaderMaterial;
     width: number;
     height: number;
+    hitWidth: number; // Actual content width for hover detection
     link: string;
     project: Project;
   }
@@ -352,6 +358,7 @@
       let texture: THREE.CanvasTexture;
       let texWidth: number;
       let texHeight: number;
+      let hitWidth: number;
 
       if (project.isImage && project.imagePath) {
         // Image-based item (Fox logo)
@@ -359,11 +366,14 @@
         texture = createImageTexture(img, textureHeight);
         texWidth = texture.image.width;
         texHeight = texture.image.height;
+        hitWidth = texWidth; // Images use full width
       } else {
         // Text-based item
         texture = createTextTexture(project.name, fontSize);
         texWidth = texture.image.width;
         texHeight = texture.image.height;
+        // Get actual text width without padding
+        hitWidth = tempCtx.measureText(project.name).width;
       }
 
       const material = new THREE.ShaderMaterial({
@@ -373,6 +383,7 @@
           uScreenWidth: { value: width },
           uTextureSize: { value: new THREE.Vector2(texWidth, texHeight) },
           uPixelSize: { value: pixelSize },
+          uHover: { value: 0.0 },
         },
         vertexShader,
         fragmentShader,
@@ -393,6 +404,7 @@
         material,
         width: texWidth,
         height: texHeight,
+        hitWidth,
         link: project.link,
         project
       });
@@ -404,8 +416,8 @@
   // ============================================
   // CENTER GLOW EFFECT - LED PIXEL RIFT
   // ============================================
-  const glowWidth = 600;
-  const glowHeight = height * 0.85; // Fills most of the extended canvas
+  const glowWidth = 500;
+  const glowHeight = Math.min(height * 0.6, 600); // Capped at 600px max
 
   const glowGeometry = new THREE.PlaneGeometry(glowWidth, glowHeight);
   const glowMaterial = new THREE.ShaderMaterial({
@@ -525,6 +537,7 @@
   const scrollSpeed = 1.2;
   let time = 0;
   let lastTime = performance.now();
+  let hoveredItem: ProjectMesh | null = null;
 
   function animate() {
     requestAnimationFrame(animate);
@@ -552,6 +565,17 @@
       item.mesh.position.x = x;
       item.material.uniforms.uTime.value = time;
       item.material.uniforms.uScreenWidth.value = width;
+
+      // Smooth hover animation
+      const targetHover = item === hoveredItem ? 1.0 : 0.0;
+      const currentHover = item.material.uniforms.uHover.value;
+      item.material.uniforms.uHover.value += (targetHover - currentHover) * 0.2;
+
+      // Scale up on hover
+      const baseScale = 1.0;
+      const hoverScale = 1.15;
+      const scale = baseScale + (hoverScale - baseScale) * item.material.uniforms.uHover.value;
+      item.mesh.scale.set(scale, scale, 1);
     });
 
     glowMaterial.uniforms.uTime.value = time;
@@ -564,7 +588,7 @@
   // ============================================
   function onResize() {
     width = container.clientWidth;
-    height = container.clientHeight * 3; // Canvas is 300% height
+    height = container.clientHeight * 5; // Canvas is 500% height
 
     renderer.setSize(width, height);
 
@@ -579,25 +603,41 @@
   onResize();
 
   // ============================================
-  // CLICK HANDLING
+  // HOVER & CLICK HANDLING
   // ============================================
   canvas.style.cursor = 'pointer';
 
-  canvas.addEventListener('click', (e) => {
+  function getItemAtPosition(clientX: number): ProjectMesh | null {
     const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left - width / 2;
+    const mouseX = clientX - rect.left - width / 2;
 
     for (const item of projectMeshes) {
-      const meshLeft = item.mesh.position.x - item.width / 2;
-      const meshRight = item.mesh.position.x + item.width / 2;
+      // Use actual content width for hit detection
+      const meshLeft = item.mesh.position.x - item.hitWidth / 2;
+      const meshRight = item.mesh.position.x + item.hitWidth / 2;
 
-      if (clickX >= meshLeft && clickX <= meshRight) {
-        if (item.link.startsWith('http')) {
-          window.open(item.link, '_blank');
-        } else {
-          window.location.href = item.link;
-        }
-        break;
+      if (mouseX >= meshLeft && mouseX <= meshRight) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  canvas.addEventListener('mousemove', (e) => {
+    hoveredItem = getItemAtPosition(e.clientX);
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    hoveredItem = null;
+  });
+
+  canvas.addEventListener('click', (e) => {
+    const item = getItemAtPosition(e.clientX);
+    if (item) {
+      if (item.link.startsWith('http')) {
+        window.open(item.link, '_blank');
+      } else {
+        window.location.href = item.link;
       }
     }
   });

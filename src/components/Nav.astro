@@ -1,7 +1,8 @@
 ---
 const pathname = Astro.url.pathname;
+const isHome = pathname === '/';
 ---
-<nav class="nav">
+<nav class={`nav ${isHome ? 'nav-transparent' : ''}`}>
   <div class="container nav-container">
     <a href="/" class="nav-logo">
       <span class="nav-name">Anthony Guzzardo</span>
