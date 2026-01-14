@@ -251,19 +251,20 @@
 
       float dotDist = length(pixelPos - 0.5);
 
-      // LED dot shape - rounder, more visible gaps
-      float dotRadius = 0.38;
-      float dotSoftness = 0.08;
+      // LED dot shape - larger and more solid in light theme
+      float dotRadius = mix(0.38, 0.48, uIsLightTheme);
+      float dotSoftness = mix(0.08, 0.12, uIsLightTheme);
 
-      // Dots shrink and become erratic in rift
-      dotRadius -= riftZone * 0.15;
+      // Dots shrink and become erratic in rift (less effect in light theme)
+      float riftShrink = mix(0.15, 0.08, uIsLightTheme);
+      dotRadius -= riftZone * riftShrink;
       dotSoftness += riftZone * 0.1;
 
       float dot = 1.0 - smoothstep(dotRadius - dotSoftness, dotRadius, dotDist);
 
       // === LED GLOW (subtle bloom around dots) ===
       float glowRadius = 0.6;
-      float dotGlow = (1.0 - smoothstep(dotRadius, glowRadius, dotDist)) * 0.15;
+      float dotGlow = (1.0 - smoothstep(dotRadius, glowRadius, dotDist)) * mix(0.15, 0.25, uIsLightTheme);
 
       // === FLICKER & GLITCH ===
       float flicker = 1.0;
@@ -306,9 +307,12 @@
       // Add glow
       alpha = max(alpha, texColor.a * dotGlow);
 
-      // Random dead pixels outside rift (subtle LED imperfection)
-      float deadPixel = hash(gridUV * 13.0) > 0.995 ? 0.3 : 1.0;
+      // Random dead pixels outside rift (disabled in light theme for readability)
+      float deadPixel = uIsLightTheme > 0.5 ? 1.0 : (hash(gridUV * 13.0) > 0.995 ? 0.3 : 1.0);
       alpha *= deadPixel;
+
+      // Boost alpha significantly in light theme for readability
+      alpha = mix(alpha, min(alpha * 1.8, texColor.a), uIsLightTheme);
 
       vec4 color = vec4(ledColor, alpha);
 
@@ -502,32 +506,27 @@
         float pixelVariation = hash(cellIndex) * 0.15 + 0.85;
 
         // === COLOR GRADIENT - theme aware ===
-        // Dark theme: bright warm colors for additive blending
-        // Light theme: darker, more saturated colors for normal blending
-        vec3 coreColor, innerColor, midColor, outerColor, edgeColor;
+        vec3 color;
 
         if (uIsLightTheme > 0.5) {
-          // Light theme - richer, darker colors that show on light bg
-          coreColor = vec3(0.95, 0.7, 0.1);
-          innerColor = vec3(0.9, 0.5, 0.05);
-          midColor = vec3(0.85, 0.3, 0.02);
-          outerColor = vec3(0.6, 0.12, 0.01);
-          edgeColor = vec3(0.35, 0.05, 0.0);
+          // Light theme - simple 2-color gradient, bold and saturated
+          vec3 coreColor = vec3(1.0, 0.45, 0.0);  // Bright orange
+          vec3 edgeColor = vec3(0.85, 0.15, 0.0); // Deep red-orange
+          color = mix(edgeColor, coreColor, smoothstep(0.5, 0.0, radialDist));
         } else {
-          // Dark theme - original bright colors
-          coreColor = vec3(0.95, 0.92, 0.3);
-          innerColor = vec3(0.9, 0.75, 0.15);
-          midColor = vec3(0.95, 0.45, 0.08);
-          outerColor = vec3(0.7, 0.15, 0.02);
-          edgeColor = vec3(0.4, 0.05, 0.01);
-        }
+          // Dark theme - warm gradient from yellow core to red edge
+          vec3 coreColor = vec3(0.95, 0.92, 0.3);
+          vec3 innerColor = vec3(0.9, 0.75, 0.15);
+          vec3 midColor = vec3(0.95, 0.45, 0.08);
+          vec3 outerColor = vec3(0.7, 0.15, 0.02);
+          vec3 edgeColor = vec3(0.4, 0.05, 0.01);
 
-        // Build color based on distance from center
-        vec3 color = edgeColor;
-        color = mix(color, outerColor, smoothstep(0.5, 0.35, radialDist));
-        color = mix(color, midColor, smoothstep(0.35, 0.22, radialDist));
-        color = mix(color, innerColor, smoothstep(0.22, 0.1, radialDist));
-        color = mix(color, coreColor, smoothstep(0.1, 0.0, radialDist));
+          color = edgeColor;
+          color = mix(color, outerColor, smoothstep(0.5, 0.35, radialDist));
+          color = mix(color, midColor, smoothstep(0.35, 0.22, radialDist));
+          color = mix(color, innerColor, smoothstep(0.22, 0.1, radialDist));
+          color = mix(color, coreColor, smoothstep(0.1, 0.0, radialDist));
+        }
 
         // === INTENSITY ===
         // Diamond falloff - more gradual for wider spread
@@ -568,8 +567,8 @@
         color.r += tempWave * 0.12 * diamondMask;
         color.g -= tempWave * 0.04 * diamondMask;
 
-        // Boost overall brightness - more for light theme since normal blending is less impactful
-        float brightnessMultiplier = mix(0.85, 1.2, uIsLightTheme);
+        // Boost overall brightness - much more for light theme since normal blending is less impactful
+        float brightnessMultiplier = mix(0.85, 1.8, uIsLightTheme);
         intensity *= brightnessMultiplier;
 
         gl_FragColor = vec4(color * intensity, intensity);
