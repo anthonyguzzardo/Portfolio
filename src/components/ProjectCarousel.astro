@@ -462,6 +462,10 @@
         return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
       }
 
+      float hash2(vec2 p) {
+        return fract(sin(dot(p, vec2(269.5, 183.3))) * 43758.5453);
+      }
+
       void main() {
         vec2 center = vUv - 0.5;
 
@@ -540,9 +544,29 @@
         float intensity = diamondMask * verticalFade * centerBoost;
         intensity *= inPixel * pixelVariation;
 
-        // Subtle flicker
-        float flicker = 0.95 + 0.05 * sin(uTime * 3.0 + hash(cellIndex) * 6.28);
-        intensity *= flicker;
+        // === ORGANIC TURBULENCE (sun surface / fire / black hole) ===
+        // Smooth flowing noise using layered sine waves
+        vec2 noiseCoord = cellIndex * 0.08;
+
+        // Slow roiling motion - multiple octaves for organic feel
+        float turbulence = 0.0;
+        turbulence += sin(noiseCoord.x * 2.0 + uTime * 0.8) * sin(noiseCoord.y * 2.5 + uTime * 0.6) * 0.5;
+        turbulence += sin(noiseCoord.x * 4.0 - uTime * 1.1 + 1.0) * sin(noiseCoord.y * 3.5 + uTime * 0.9) * 0.25;
+        turbulence += sin(noiseCoord.x * 7.0 + uTime * 1.4) * sin(noiseCoord.y * 6.0 - uTime * 1.2) * 0.125;
+
+        // Normalize to 0.85-1.15 range for gentle variation
+        float flow = 0.92 + turbulence * 0.16;
+
+        // Rising heat effect - subtle upward drift in brightness
+        float heat = sin(noiseCoord.y * 3.0 - uTime * 2.0 + noiseCoord.x * 0.5) * 0.08 + 1.0;
+
+        // Apply organic movement
+        intensity *= flow * heat;
+
+        // Flowing color temperature - warmer/cooler areas that drift
+        float tempWave = sin(noiseCoord.x * 1.5 + noiseCoord.y * 2.0 + uTime * 0.7) * 0.5 + 0.5;
+        color.r += tempWave * 0.12 * diamondMask;
+        color.g -= tempWave * 0.04 * diamondMask;
 
         // Boost overall brightness - more for light theme since normal blending is less impactful
         float brightnessMultiplier = mix(0.85, 1.2, uIsLightTheme);
