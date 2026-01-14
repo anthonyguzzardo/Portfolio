@@ -37,8 +37,16 @@
 <script>
   import * as THREE from 'three';
 
-  const projects = [
+  interface Project {
+    name: string;
+    link: string;
+    isImage?: boolean;
+    imagePath?: string;
+  }
+
+  const projects: Project[] = [
     { name: 'DEALIFIER', link: 'https://dealifier.com' },
+    { name: 'FOX', link: '/', isImage: true, imagePath: '/images/MrFoxSittingLite.png' },
     { name: 'RANGLEY', link: '/rangley' },
     { name: 'SPACE CALCULATOR', link: 'https://alkaline-89z.pages.dev' },
   ];
@@ -105,6 +113,48 @@
 
     return texture;
   }
+
+  // ============================================
+  // CREATE IMAGE TEXTURE (for Fox logo etc)
+  // ============================================
+  function createImageTexture(img: HTMLImageElement, targetHeight: number): THREE.CanvasTexture {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+
+    // Scale image to match text height
+    const scale = targetHeight / img.height;
+    canvas.width = Math.ceil(img.width * scale);
+    canvas.height = Math.ceil(targetHeight);
+
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.NearestFilter;
+    texture.magFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+
+    return texture;
+  }
+
+  // Preload images
+  const imageCache: Map<string, HTMLImageElement> = new Map();
+
+  async function loadImage(path: string): Promise<HTMLImageElement> {
+    if (imageCache.has(path)) return imageCache.get(path)!;
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        imageCache.set(path, img);
+        resolve(img);
+      };
+      img.src = path;
+    });
+  }
+
+  // Preload all images before creating meshes
+  const imageProjects = projects.filter(p => p.isImage && p.imagePath);
+  await Promise.all(imageProjects.map(p => loadImage(p.imagePath!)));
 
   // ============================================
   // LED PIXELATION SHADER
@@ -265,21 +315,31 @@
     width: number;
     height: number;
     link: string;
+    project: Project;
   }
 
   const projectMeshes: ProjectMesh[] = [];
   const fontSize = Math.min(100, width * 0.1);
+  const textureHeight = Math.ceil(fontSize * 1.4);
   const gap = 120;
   const pixelSize = 3.0; // Size of LED pixels
 
-  // Calculate total width
+  // Calculate total width (accounting for both text and images)
   let totalWidth = 0;
   const tempCanvas = document.createElement('canvas');
   const tempCtx = tempCanvas.getContext('2d')!;
   tempCtx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
 
   projects.forEach(p => {
-    totalWidth += Math.ceil(tempCtx.measureText(p.name).width + 40) + gap;
+    if (p.isImage && p.imagePath) {
+      const img = imageCache.get(p.imagePath);
+      if (img) {
+        const scale = textureHeight / img.height;
+        totalWidth += Math.ceil(img.width * scale) + gap;
+      }
+    } else {
+      totalWidth += Math.ceil(tempCtx.measureText(p.name).width + 40) + gap;
+    }
   });
 
   // Create copies for seamless loop
@@ -288,9 +348,22 @@
 
   for (let copy = 0; copy < copies; copy++) {
     projects.forEach((project) => {
-      const texture = createTextTexture(project.name, fontSize);
-      const texWidth = texture.image.width;
-      const texHeight = texture.image.height;
+      let texture: THREE.CanvasTexture;
+      let texWidth: number;
+      let texHeight: number;
+
+      if (project.isImage && project.imagePath) {
+        // Image-based item (Fox logo)
+        const img = imageCache.get(project.imagePath)!;
+        texture = createImageTexture(img, textureHeight);
+        texWidth = texture.image.width;
+        texHeight = texture.image.height;
+      } else {
+        // Text-based item
+        texture = createTextTexture(project.name, fontSize);
+        texWidth = texture.image.width;
+        texHeight = texture.image.height;
+      }
 
       const material = new THREE.ShaderMaterial({
         uniforms: {
@@ -319,7 +392,8 @@
         material,
         width: texWidth,
         height: texHeight,
-        link: project.link
+        link: project.link,
+        project
       });
 
       xOffset += texWidth + gap;
@@ -531,9 +605,11 @@
   // THEME CHANGE
   // ============================================
   const observer = new MutationObserver(() => {
-    projectMeshes.forEach((item, index) => {
-      const projectIndex = index % projects.length;
-      const newTexture = createTextTexture(projects[projectIndex].name, fontSize);
+    projectMeshes.forEach((item) => {
+      // Skip image items - they don't change with theme
+      if (item.project.isImage) return;
+
+      const newTexture = createTextTexture(item.project.name, fontSize);
       item.material.uniforms.uTexture.value.dispose();
       item.material.uniforms.uTexture.value = newTexture;
       item.material.uniforms.uTextureSize.value.set(newTexture.image.width, newTexture.image.height);

@@ -269,6 +269,10 @@ h3 {
 	transition: background 0.3s ease;
 }
 
+.hero.hero-compact {
+	padding: 2rem 2rem 1rem;
+}
+
 .hero .container {
 	max-width: 800px;
 }
