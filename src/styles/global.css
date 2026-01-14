@@ -173,6 +173,34 @@ h3 {
 	color: var(--text-primary);
 }
 
+/* Copy Email Button */
+.copy-email-btn {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0.25rem 0;
+	color: var(--text-secondary);
+	font-size: 0.95rem;
+	font-family: inherit;
+	transition: color 0.3s;
+}
+
+.copy-email-btn:hover {
+	color: var(--text-primary);
+}
+
+.email-icon {
+	width: 18px;
+	height: 18px;
+}
+
+.copy-email-text {
+	transition: color 0.2s;
+}
+
 /* Theme Toggle Button */
 .theme-toggle {
 	background: none;
@@ -621,6 +649,42 @@ footer {
 
 .footer-copyright {
 	font-size: 0.9rem;
+}
+
+.site-footer {
+	padding: 2rem;
+	text-align: center;
+	background: var(--bg-primary);
+	border-top: 1px solid var(--border-color);
+	transition: all 0.3s ease;
+}
+
+.footer-content {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+	font-size: 0.9rem;
+}
+
+.footer-name {
+	color: var(--text-primary);
+	font-weight: 500;
+}
+
+.footer-divider {
+	color: var(--text-muted);
+}
+
+.footer-link {
+	color: var(--text-secondary);
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+	color: var(--accent-orange);
 }
 
 /* ==========================================

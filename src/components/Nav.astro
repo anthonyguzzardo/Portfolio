@@ -14,6 +14,13 @@ const pathname = Astro.url.pathname;
     </div>
 
     <div class="nav-right">
+      <button id="copy-email" class="copy-email-btn" aria-label="Copy email">
+        <svg class="email-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <path d="M22 6l-10 7L2 6"/>
+        </svg>
+        <span class="copy-email-text">Email</span>
+      </button>
       <a href="https://github.com/anthonyguzzardo" target="_blank">GitHub</a>
       <a href="https://www.linkedin.com/in/anthony-guzzardo" target="_blank">LinkedIn</a>
       <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
@@ -42,5 +49,24 @@ const pathname = Astro.url.pathname;
     const next = current === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
+  });
+
+  // Copy email button
+  const copyBtn = document.getElementById('copy-email');
+  const emailText = copyBtn?.querySelector('.copy-email-text');
+
+  copyBtn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText('agguzzy91@gmail.com');
+      if (emailText) {
+        emailText.textContent = 'Copied!';
+        setTimeout(() => {
+          emailText.textContent = 'Email';
+        }, 2000);
+      }
+    } catch (err) {
+      // Fallback - open mailto
+      window.location.href = 'mailto:agguzzy91@gmail.com';
+    }
   });
 </script>
