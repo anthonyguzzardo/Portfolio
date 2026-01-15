@@ -1,5 +1,7 @@
 ---
-// ProjectCarousel.astro - Infinite scrolling with center LED pixelation rift
+// ProjectCarousel.astro - Infinite scrolling with center LED pixelation
+// Dark theme: Black hole with accretion disk
+// Light theme: Flow gradient (NO distortion)
 ---
 
 <div class="carousel-section">
@@ -37,7 +39,13 @@
 
 <script>
   import * as THREE from 'three';
+  import { blackHoleVertexShader, blackHoleFragmentShader, BLACK_HOLE_DEFAULTS } from './shaders/BlackHoleShader';
+  import { flowGradientVertexShader, flowGradientFragmentShader } from './shaders/FlowGradientShader';
+  import { ledTextVertexShader, ledTextFragmentShader } from './shaders/LEDTextShader';
 
+  // ============================================
+  // TYPES
+  // ============================================
   interface Project {
     name: string;
     link: string;
@@ -45,6 +53,19 @@
     imagePath?: string;
   }
 
+  interface ProjectMesh {
+    mesh: THREE.Mesh;
+    material: THREE.ShaderMaterial;
+    width: number;
+    height: number;
+    hitWidth: number;
+    link: string;
+    project: Project;
+  }
+
+  // ============================================
+  // DATA
+  // ============================================
   const projects: Project[] = [
     { name: 'DEALIFIER', link: 'https://dealifier.com' },
     { name: 'FOX', link: '/', isImage: true, imagePath: '/images/MrFoxSittingLite.png' },
@@ -53,33 +74,7 @@
   ];
 
   // ============================================
-  // SETUP
-  // ============================================
-  const canvas = document.getElementById('carousel-canvas') as HTMLCanvasElement;
-  const container = canvas.parentElement as HTMLElement;
-
-  const renderer = new THREE.WebGLRenderer({
-    canvas,
-    alpha: true,
-    antialias: false, // Disable for crisp pixels
-  });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x000000, 0);
-
-  const scene = new THREE.Scene();
-
-  let width = container.clientWidth;
-  let height = container.clientHeight * 5; // Canvas is 500% height
-
-  const camera = new THREE.OrthographicCamera(
-    -width / 2, width / 2,
-    height / 2, -height / 2,
-    -1000, 1000
-  );
-  camera.position.z = 100;
-
-  // ============================================
-  // THEME COLORS
+  // THEME HELPERS
   // ============================================
   function getThemeColors() {
     const theme = document.documentElement.getAttribute('data-theme') || 'dark';
@@ -96,7 +91,33 @@
   }
 
   // ============================================
-  // CREATE TEXT TEXTURE
+  // SETUP
+  // ============================================
+  const canvas = document.getElementById('carousel-canvas') as HTMLCanvasElement;
+  const container = canvas.parentElement as HTMLElement;
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: false,
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+
+  let width = container.clientWidth;
+  let height = container.clientHeight * 5;
+
+  const camera = new THREE.OrthographicCamera(
+    -width / 2, width / 2,
+    height / 2, -height / 2,
+    -1000, 1000
+  );
+  camera.position.z = 100;
+
+  // ============================================
+  // TEXTURE CREATION
   // ============================================
   function createTextTexture(text: string, fontSize: number): THREE.CanvasTexture {
     const colors = getThemeColors();
@@ -115,21 +136,17 @@
     ctx.fillText(text, 20, canvas.height / 2);
 
     const texture = new THREE.CanvasTexture(canvas);
-    texture.minFilter = THREE.NearestFilter;
-    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
     texture.generateMipmaps = false;
 
     return texture;
   }
 
-  // ============================================
-  // CREATE IMAGE TEXTURE (for Fox logo etc)
-  // ============================================
   function createImageTexture(img: HTMLImageElement, targetHeight: number): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
 
-    // Scale image to match text height
     const scale = targetHeight / img.height;
     canvas.width = Math.ceil(img.width * scale);
     canvas.height = Math.ceil(targetHeight);
@@ -137,14 +154,16 @@
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     const texture = new THREE.CanvasTexture(canvas);
-    texture.minFilter = THREE.NearestFilter;
-    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
     texture.generateMipmaps = false;
 
     return texture;
   }
 
-  // Preload images
+  // ============================================
+  // IMAGE PRELOADING
+  // ============================================
   const imageCache: Map<string, HTMLImageElement> = new Map();
 
   async function loadImage(path: string): Promise<HTMLImageElement> {
@@ -160,200 +179,19 @@
     });
   }
 
-  // Preload all images before creating meshes
   const imageProjects = projects.filter(p => p.isImage && p.imagePath);
   await Promise.all(imageProjects.map(p => loadImage(p.imagePath!)));
 
   // ============================================
-  // LED PIXELATION SHADER
-  // ============================================
-  const vertexShader = `
-    varying vec2 vUv;
-    varying vec2 vWorldPos;
-
-    void main() {
-      vUv = uv;
-      vec4 worldPos = modelMatrix * vec4(position, 1.0);
-      vWorldPos = worldPos.xy;
-      gl_Position = projectionMatrix * viewMatrix * worldPos;
-    }
-  `;
-
-  const fragmentShader = `
-    uniform sampler2D uTexture;
-    uniform float uTime;
-    uniform float uScreenWidth;
-    uniform vec2 uTextureSize;
-    uniform float uPixelSize;
-    uniform float uHover;
-    uniform float uIsLightTheme;
-    varying vec2 vUv;
-    varying vec2 vWorldPos;
-
-    // Hash functions for randomness
-    float hash(vec2 p) {
-      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-    }
-
-    float hash2(vec2 p) {
-      return fract(sin(dot(p, vec2(269.5, 183.3))) * 43758.5453);
-    }
-
-    void main() {
-      // Elliptical rift zone
-      float riftWidth = uScreenWidth * 0.12;
-      float riftHeight = uTextureSize.y * 0.5;
-
-      vec2 riftPos = vec2(vWorldPos.x / riftWidth, vWorldPos.y / riftHeight);
-      float distFromCenter = length(riftPos);
-
-      // Rift intensity: 1 at center, 0 outside
-      float riftZone = 1.0 - smoothstep(0.0, 1.0, distFromCenter);
-
-      // === ALWAYS LED PIXELS ===
-      vec2 texelSize = vec2(1.0) / uTextureSize;
-      float pixelSize = uPixelSize;
-
-      // Snap UV to pixel grid
-      vec2 gridUV = floor(vUv / texelSize / pixelSize);
-      vec2 pixelUV = gridUV * texelSize * pixelSize + texelSize * pixelSize * 0.5;
-
-      // === RIFT DISTORTION (subtle) ===
-      vec2 sampleUV = pixelUV;
-
-      if (riftZone > 0.0) {
-        // Gentle scatter
-        float scatterIntensity = riftZone * 0.02;
-        float noiseX = (hash(gridUV + floor(uTime * 2.0)) - 0.5);
-        float noiseY = (hash2(gridUV + floor(uTime * 2.0)) - 0.5);
-
-        sampleUV += vec2(noiseX, noiseY) * scatterIntensity;
-
-        // Subtle wave
-        float wave = sin(gridUV.x * 0.3 + uTime * 2.0) * 0.01 * riftZone;
-        sampleUV.y += wave;
-      }
-
-      sampleUV = clamp(sampleUV, 0.0, 1.0);
-
-      // Sample texture
-      vec4 texColor = texture2D(uTexture, sampleUV);
-
-      // === LED DOT RENDERING ===
-      vec2 pixelPos = fract(vUv / texelSize / pixelSize);
-
-      // Subtle dot jitter in rift
-      if (riftZone > 0.0) {
-        float jitter = riftZone * 0.1;
-        pixelPos.x += (hash(gridUV * 7.0) - 0.5) * jitter;
-        pixelPos.y += (hash2(gridUV * 7.0) - 0.5) * jitter;
-      }
-
-      float dotDist = length(pixelPos - 0.5);
-
-      // LED dot shape - larger and more solid in light theme
-      float dotRadius = mix(0.38, 0.48, uIsLightTheme);
-      float dotSoftness = mix(0.08, 0.12, uIsLightTheme);
-
-      // Dots shrink and become erratic in rift (less effect in light theme)
-      float riftShrink = mix(0.15, 0.08, uIsLightTheme);
-      dotRadius -= riftZone * riftShrink;
-      dotSoftness += riftZone * 0.1;
-
-      float dot = 1.0 - smoothstep(dotRadius - dotSoftness, dotRadius, dotDist);
-
-      // === LED GLOW (subtle bloom around dots) ===
-      float glowRadius = 0.6;
-      float dotGlow = (1.0 - smoothstep(dotRadius, glowRadius, dotDist)) * mix(0.15, 0.25, uIsLightTheme);
-
-      // === FLICKER & GLITCH ===
-      float flicker = 1.0;
-      if (riftZone > 0.2) {
-        // Occasional pixel flicker
-        float flickerChance = riftZone * 0.15;
-        flicker = hash(gridUV + floor(uTime * 8.0)) > flickerChance ? 1.0 : 0.7;
-
-        // Rare bright pixels
-        float stuckOn = hash(gridUV * 3.0) > 0.99 ? 1.3 : 1.0;
-        flicker *= stuckOn;
-      }
-
-      // === COLOR ===
-      vec3 ledColor = texColor.rgb;
-
-      // Chromatic aberration in rift
-      if (riftZone > 0.0) {
-        float aberration = riftZone * 0.025;
-        vec4 texR = texture2D(uTexture, sampleUV + vec2(aberration, 0.0));
-        vec4 texB = texture2D(uTexture, sampleUV - vec2(aberration, 0.0));
-
-        ledColor = vec3(texR.r, texColor.g, texB.b);
-
-        // Hot orange/red tint in destruction zone - darker for light theme
-        vec3 riftTintDark = vec3(0.95, 0.3, 0.1);
-        vec3 riftTintLight = vec3(0.8, 0.2, 0.05);
-        vec3 riftTint = mix(riftTintDark, riftTintLight, uIsLightTheme);
-        float tintStrength = mix(0.6, 0.75, uIsLightTheme);
-        ledColor = mix(ledColor, riftTint, riftZone * tintStrength);
-
-        // Boost brightness in rift (less boost in light theme)
-        float brightnessBoost = mix(0.8, 0.3, uIsLightTheme);
-        ledColor *= 1.0 + riftZone * brightnessBoost;
-      }
-
-      // === FINAL COMPOSITE ===
-      float alpha = texColor.a * dot * flicker;
-
-      // Add glow
-      alpha = max(alpha, texColor.a * dotGlow);
-
-      // Random dead pixels outside rift (disabled in light theme for readability)
-      float deadPixel = uIsLightTheme > 0.5 ? 1.0 : (hash(gridUV * 13.0) > 0.995 ? 0.3 : 1.0);
-      alpha *= deadPixel;
-
-      // Boost alpha significantly in light theme for readability
-      alpha = mix(alpha, min(alpha * 1.8, texColor.a), uIsLightTheme);
-
-      vec4 color = vec4(ledColor, alpha);
-
-      // Hover effect - different for light vs dark theme
-      if (uIsLightTheme > 0.5) {
-        // Light theme: warm orange glow, slight darkening for contrast
-        color.rgb = mix(color.rgb, vec3(0.9, 0.4, 0.1), uHover * 0.5);
-      } else {
-        // Dark theme: brighten toward warm white
-        color.rgb *= 1.0 + uHover * 1.2;
-        color.rgb = mix(color.rgb, vec3(1.0, 0.95, 0.8), uHover * 0.3);
-      }
-
-      // Vertical fade at edges
-      float edgeFade = smoothstep(0.0, 0.25, vUv.y) * smoothstep(1.0, 0.75, vUv.y);
-      color.a *= edgeFade;
-
-      gl_FragColor = color;
-    }
-  `;
-
-  // ============================================
   // CREATE PROJECT MESHES
   // ============================================
-  interface ProjectMesh {
-    mesh: THREE.Mesh;
-    material: THREE.ShaderMaterial;
-    width: number;
-    height: number;
-    hitWidth: number; // Actual content width for hover detection
-    link: string;
-    project: Project;
-  }
-
   const projectMeshes: ProjectMesh[] = [];
   const fontSize = Math.min(100, width * 0.1);
   const textureHeight = Math.ceil(fontSize * 1.4);
   const gap = 120;
-  const pixelSize = 3.0; // Size of LED pixels
+  const pixelSize = 3.0;
 
-  // Calculate total width (accounting for both text and images)
+  // Calculate total width
   let totalWidth = 0;
   const tempCanvas = document.createElement('canvas');
   const tempCtx = tempCanvas.getContext('2d')!;
@@ -383,18 +221,15 @@
       let hitWidth: number;
 
       if (project.isImage && project.imagePath) {
-        // Image-based item (Fox logo)
         const img = imageCache.get(project.imagePath)!;
         texture = createImageTexture(img, textureHeight);
         texWidth = texture.image.width;
         texHeight = texture.image.height;
-        hitWidth = texWidth; // Images use full width
+        hitWidth = texWidth;
       } else {
-        // Text-based item
         texture = createTextTexture(project.name, fontSize);
         texWidth = texture.image.width;
         texHeight = texture.image.height;
-        // Get actual text width without padding
         hitWidth = tempCtx.measureText(project.name).width;
       }
 
@@ -407,9 +242,11 @@
           uPixelSize: { value: pixelSize },
           uHover: { value: 0.0 },
           uIsLightTheme: { value: isLightTheme() ? 1.0 : 0.0 },
+          uBlackHoleRadius: { value: BLACK_HOLE_DEFAULTS.blackHoleRadius },
+          uAccretionRadius: { value: BLACK_HOLE_DEFAULTS.accretionRadius },
         },
-        vertexShader,
-        fragmentShader,
+        vertexShader: ledTextVertexShader,
+        fragmentShader: ledTextFragmentShader,
         transparent: true,
         depthWrite: false,
       });
@@ -437,151 +274,50 @@
   }
 
   // ============================================
-  // CENTER GLOW EFFECT - LED PIXEL RIFT
+  // BACKGROUND MESHES
   // ============================================
-  const glowWidth = 500;
-  const glowHeight = Math.min(height * 0.6, 600); // Capped at 600px max
-
+  const glowWidth = width * 1.5;
+  const glowHeight = height * 1.2;
   const glowGeometry = new THREE.PlaneGeometry(glowWidth, glowHeight);
-  const glowMaterial = new THREE.ShaderMaterial({
+
+  // Dark theme: Black hole
+  const initialScale = isLightTheme() ? 0.0 : 1.0;
+  const blackHoleMaterial = new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
       uResolution: { value: new THREE.Vector2(glowWidth, glowHeight) },
       uIsLightTheme: { value: isLightTheme() ? 1.0 : 0.0 },
+      uBlackHoleRadius: { value: BLACK_HOLE_DEFAULTS.blackHoleRadius * initialScale },
+      uAccretionRadius: { value: BLACK_HOLE_DEFAULTS.accretionRadius * initialScale },
+      uOpacity: { value: initialScale },
     },
-    vertexShader: `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform float uTime;
-      uniform vec2 uResolution;
-      uniform float uIsLightTheme;
-      varying vec2 vUv;
-
-      float hash(vec2 p) {
-        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-      }
-
-      float hash2(vec2 p) {
-        return fract(sin(dot(p, vec2(269.5, 183.3))) * 43758.5453);
-      }
-
-      void main() {
-        vec2 center = vUv - 0.5;
-
-        // Diamond/eye shape - vertical columns meeting at center
-        float absX = abs(center.x);
-        float absY = abs(center.y);
-
-        // Create the diamond envelope - tighter at top/bottom, wider at middle
-        float diamondDist = absX * 1.8 + absY * 1.0;
-
-        // Also use radial for the glow falloff (wider spread)
-        float radialDist = length(vec2(center.x * 1.5, center.y * 0.7));
-
-        // === LED PIXEL GRID ===
-        float pixelWidth = 3.0;  // Width of each LED column
-        float pixelHeight = 4.0; // Height of each LED row
-        float gapX = 1.5;        // Gap between columns
-        float gapY = 1.0;        // Gap between rows
-
-        // Calculate pixel coordinates
-        float cellWidth = pixelWidth + gapX;
-        float cellHeight = pixelHeight + gapY;
-
-        vec2 pixelCoord = vUv * uResolution;
-        vec2 cellPos = mod(pixelCoord, vec2(cellWidth, cellHeight));
-        vec2 cellIndex = floor(pixelCoord / vec2(cellWidth, cellHeight));
-
-        // Is this pixel inside an LED dot?
-        float inPixelX = step(cellPos.x, pixelWidth);
-        float inPixelY = step(cellPos.y, pixelHeight);
-        float inPixel = inPixelX * inPixelY;
-
-        // Slight variation per pixel
-        float pixelVariation = hash(cellIndex) * 0.15 + 0.85;
-
-        // === COLOR GRADIENT - theme aware ===
-        vec3 color;
-
-        if (uIsLightTheme > 0.5) {
-          // Light theme - simple 2-color gradient, bold and saturated
-          vec3 coreColor = vec3(1.0, 0.45, 0.0);  // Bright orange
-          vec3 edgeColor = vec3(0.85, 0.15, 0.0); // Deep red-orange
-          color = mix(edgeColor, coreColor, smoothstep(0.5, 0.0, radialDist));
-        } else {
-          // Dark theme - warm gradient from yellow core to red edge
-          vec3 coreColor = vec3(0.95, 0.92, 0.3);
-          vec3 innerColor = vec3(0.9, 0.75, 0.15);
-          vec3 midColor = vec3(0.95, 0.45, 0.08);
-          vec3 outerColor = vec3(0.7, 0.15, 0.02);
-          vec3 edgeColor = vec3(0.4, 0.05, 0.01);
-
-          color = edgeColor;
-          color = mix(color, outerColor, smoothstep(0.5, 0.35, radialDist));
-          color = mix(color, midColor, smoothstep(0.35, 0.22, radialDist));
-          color = mix(color, innerColor, smoothstep(0.22, 0.1, radialDist));
-          color = mix(color, coreColor, smoothstep(0.1, 0.0, radialDist));
-        }
-
-        // === INTENSITY ===
-        // Diamond falloff - more gradual for wider spread
-        float diamondMask = 1.0 - smoothstep(0.25, 0.7, diamondDist);
-
-        // Extra brightness in center column
-        float centerBoost = 1.0 - smoothstep(0.0, 0.2, absX);
-        centerBoost = centerBoost * 0.5 + 1.0;
-
-        // Vertical intensity falloff - smooth taper to zero at edges
-        float verticalFade = 1.0 - smoothstep(0.25, 0.5, absY);
-
-        // Combine
-        float intensity = diamondMask * verticalFade * centerBoost;
-        intensity *= inPixel * pixelVariation;
-
-        // === ORGANIC TURBULENCE (sun surface / fire / black hole) ===
-        // Smooth flowing noise using layered sine waves
-        vec2 noiseCoord = cellIndex * 0.08;
-
-        // Slow roiling motion - multiple octaves for organic feel
-        float turbulence = 0.0;
-        turbulence += sin(noiseCoord.x * 2.0 + uTime * 0.8) * sin(noiseCoord.y * 2.5 + uTime * 0.6) * 0.5;
-        turbulence += sin(noiseCoord.x * 4.0 - uTime * 1.1 + 1.0) * sin(noiseCoord.y * 3.5 + uTime * 0.9) * 0.25;
-        turbulence += sin(noiseCoord.x * 7.0 + uTime * 1.4) * sin(noiseCoord.y * 6.0 - uTime * 1.2) * 0.125;
-
-        // Normalize to 0.85-1.15 range for gentle variation
-        float flow = 0.92 + turbulence * 0.16;
-
-        // Rising heat effect - subtle upward drift in brightness
-        float heat = sin(noiseCoord.y * 3.0 - uTime * 2.0 + noiseCoord.x * 0.5) * 0.08 + 1.0;
-
-        // Apply organic movement
-        intensity *= flow * heat;
-
-        // Flowing color temperature - warmer/cooler areas that drift
-        float tempWave = sin(noiseCoord.x * 1.5 + noiseCoord.y * 2.0 + uTime * 0.7) * 0.5 + 0.5;
-        color.r += tempWave * 0.12 * diamondMask;
-        color.g -= tempWave * 0.04 * diamondMask;
-
-        // Boost overall brightness - much more for light theme since normal blending is less impactful
-        float brightnessMultiplier = mix(0.85, 1.8, uIsLightTheme);
-        intensity *= brightnessMultiplier;
-
-        gl_FragColor = vec4(color * intensity, intensity);
-      }
-    `,
+    vertexShader: blackHoleVertexShader,
+    fragmentShader: blackHoleFragmentShader,
     transparent: true,
     depthWrite: false,
-    blending: isLightTheme() ? THREE.NormalBlending : THREE.AdditiveBlending,
+    blending: THREE.AdditiveBlending,
   });
 
-  const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-  glowMesh.position.z = 50;
-  scene.add(glowMesh);
+  const blackHoleMesh = new THREE.Mesh(glowGeometry, blackHoleMaterial);
+  blackHoleMesh.position.z = -10;
+  scene.add(blackHoleMesh);
+
+  // Light theme: Flow gradient
+  const flowGradientMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      u_time: { value: 0 },
+      u_resolution: { value: new THREE.Vector2(glowWidth, glowHeight) },
+      u_opacity: { value: isLightTheme() ? 1.0 : 0.0 },
+    },
+    vertexShader: flowGradientVertexShader,
+    fragmentShader: flowGradientFragmentShader,
+    transparent: true,
+    depthWrite: false,
+  });
+
+  const flowMesh = new THREE.Mesh(glowGeometry.clone(), flowGradientMaterial);
+  flowMesh.position.z = -11;
+  scene.add(flowMesh);
 
   // ============================================
   // ANIMATION
@@ -591,6 +327,11 @@
   let time = 0;
   let lastTime = performance.now();
   let hoveredItem: ProjectMesh | null = null;
+
+  // Theme transition
+  let targetFlowOpacity = isLightTheme() ? 1.0 : 0.0;
+  let targetBlackHoleScale = isLightTheme() ? 0.0 : 1.0;
+  const transitionSpeed = 0.04;
 
   function animate() {
     requestAnimationFrame(animate);
@@ -610,8 +351,6 @@
 
     projectMeshes.forEach((item) => {
       let x = item.mesh.userData.baseX - scrollX;
-
-      // Wrap around
       x = ((x % wrapWidth) + wrapWidth) % wrapWidth;
       x -= wrapWidth / 2;
 
@@ -619,19 +358,29 @@
       item.material.uniforms.uTime.value = time;
       item.material.uniforms.uScreenWidth.value = width;
 
-      // Smooth hover animation
       const targetHover = item === hoveredItem ? 1.0 : 0.0;
       const currentHover = item.material.uniforms.uHover.value;
       item.material.uniforms.uHover.value += (targetHover - currentHover) * 0.2;
 
-      // Scale up on hover
       const baseScale = 1.0;
       const hoverScale = 1.15;
       const scale = baseScale + (hoverScale - baseScale) * item.material.uniforms.uHover.value;
       item.mesh.scale.set(scale, scale, 1);
     });
 
-    glowMaterial.uniforms.uTime.value = time;
+    blackHoleMaterial.uniforms.uTime.value = time;
+    flowGradientMaterial.uniforms.u_time.value = time;
+
+    // Smooth theme transition
+    const currentFlowOpacity = flowGradientMaterial.uniforms.u_opacity.value;
+    flowGradientMaterial.uniforms.u_opacity.value += (targetFlowOpacity - currentFlowOpacity) * transitionSpeed * delta;
+
+    // Black hole expands/shrinks
+    const currentScale = blackHoleMaterial.uniforms.uBlackHoleRadius.value / BLACK_HOLE_DEFAULTS.blackHoleRadius;
+    const newScale = currentScale + (targetBlackHoleScale - currentScale) * transitionSpeed * delta;
+    blackHoleMaterial.uniforms.uBlackHoleRadius.value = newScale * BLACK_HOLE_DEFAULTS.blackHoleRadius;
+    blackHoleMaterial.uniforms.uAccretionRadius.value = newScale * BLACK_HOLE_DEFAULTS.accretionRadius;
+    blackHoleMaterial.uniforms.uOpacity.value = newScale; // Fade with scale
 
     renderer.render(scene, camera);
   }
@@ -641,7 +390,7 @@
   // ============================================
   function onResize() {
     width = container.clientWidth;
-    height = container.clientHeight * 5; // Canvas is 500% height
+    height = container.clientHeight * 5;
 
     renderer.setSize(width, height);
 
@@ -650,29 +399,35 @@
     camera.top = height / 2;
     camera.bottom = -height / 2;
     camera.updateProjectionMatrix();
+
+    const newGlowWidth = width * 1.5;
+    const newGlowHeight = height * 1.2;
+
+    blackHoleMesh.geometry.dispose();
+    blackHoleMesh.geometry = new THREE.PlaneGeometry(newGlowWidth, newGlowHeight);
+    blackHoleMaterial.uniforms.uResolution.value.set(newGlowWidth, newGlowHeight);
+
+    flowMesh.geometry.dispose();
+    flowMesh.geometry = new THREE.PlaneGeometry(newGlowWidth, newGlowHeight);
+    flowGradientMaterial.uniforms.u_resolution.value.set(newGlowWidth, newGlowHeight);
   }
 
   window.addEventListener('resize', onResize);
   onResize();
 
   // ============================================
-  // HOVER & CLICK HANDLING
+  // HOVER & CLICK
   // ============================================
   canvas.style.cursor = 'pointer';
 
   function getItemAtPosition(clientX: number, clientY: number): ProjectMesh | null {
     const rect = canvas.getBoundingClientRect();
-    // X: canvas center = scene X 0
     const mouseX = clientX - rect.left - rect.width / 2;
-    // Y: canvas center = scene Y 0, Y increases upward in scene
     const mouseY = (rect.height / 2) - (clientY - rect.top);
 
     for (const item of projectMeshes) {
-      // Horizontal bounds using hitWidth
       const halfHitWidth = item.hitWidth / 2;
-      // Vertical bounds - add some padding for easier interaction
       const halfHeight = item.height / 2 + 20;
-
       const meshX = item.mesh.position.x;
       const meshY = item.mesh.position.y;
 
@@ -709,11 +464,13 @@
   const observer = new MutationObserver(() => {
     const lightTheme = isLightTheme();
 
+    // Set targets for smooth transition
+    targetBlackHoleScale = lightTheme ? 0.0 : 1.0;
+    targetFlowOpacity = lightTheme ? 1.0 : 0.0;
+
     projectMeshes.forEach((item) => {
-      // Update theme uniform for all items
       item.material.uniforms.uIsLightTheme.value = lightTheme ? 1.0 : 0.0;
 
-      // Skip texture update for image items - they don't change with theme
       if (item.project.isImage) return;
 
       const newTexture = createTextTexture(item.project.name, fontSize);
@@ -722,10 +479,7 @@
       item.material.uniforms.uTextureSize.value.set(newTexture.image.width, newTexture.image.height);
     });
 
-    // Update glow for theme
-    glowMaterial.uniforms.uIsLightTheme.value = lightTheme ? 1.0 : 0.0;
-    glowMaterial.blending = lightTheme ? THREE.NormalBlending : THREE.AdditiveBlending;
-    glowMaterial.needsUpdate = true;
+    blackHoleMaterial.uniforms.uIsLightTheme.value = lightTheme ? 1.0 : 0.0;
   });
 
   observer.observe(document.documentElement, {
