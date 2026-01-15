@@ -141,7 +141,7 @@ h3 {
 	box-shadow: 0 0 0 transparent;
 	backdrop-filter: blur(0px);
 	-webkit-backdrop-filter: blur(0px);
-	transition: color 0.6s ease-in-out, background 0.6s ease-in-out, border-color 0.6s ease-in-out, box-shadow 0.6s ease-in-out, backdrop-filter 0.6s ease-in-out, -webkit-backdrop-filter 0.6s ease-in-out, transform 0.3s ease;
+	transition: color 0.2s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease, transform 0.2s ease;
 }
 
 .nav-left > a:not(.nav-logo):hover {
@@ -167,7 +167,7 @@ h3 {
 	box-shadow: 0 0 0 transparent;
 	backdrop-filter: blur(0px);
 	-webkit-backdrop-filter: blur(0px);
-	transition: color 0.6s ease-in-out, background 0.6s ease-in-out, border-color 0.6s ease-in-out, box-shadow 0.6s ease-in-out, backdrop-filter 0.6s ease-in-out, -webkit-backdrop-filter 0.6s ease-in-out, transform 0.3s ease;
+	transition: color 0.2s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease, transform 0.2s ease;
 }
 
 .nav-logo:hover {
@@ -205,7 +205,7 @@ h3 {
 	box-shadow: 0 0 0 transparent;
 	backdrop-filter: blur(0px);
 	-webkit-backdrop-filter: blur(0px);
-	transition: color 0.6s ease-in-out, background 0.6s ease-in-out, border-color 0.6s ease-in-out, box-shadow 0.6s ease-in-out, backdrop-filter 0.6s ease-in-out, -webkit-backdrop-filter 0.6s ease-in-out, transform 0.3s ease;
+	transition: color 0.2s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease, transform 0.2s ease;
 }
 
 .nav-right a:hover {
@@ -318,7 +318,7 @@ h3 {
 	box-shadow: 0 0 0 transparent;
 	backdrop-filter: blur(0px);
 	-webkit-backdrop-filter: blur(0px);
-	transition: color 0.6s ease-in-out, background 0.6s ease-in-out, border-color 0.6s ease-in-out, box-shadow 0.6s ease-in-out, backdrop-filter 0.6s ease-in-out, -webkit-backdrop-filter 0.6s ease-in-out, transform 0.3s ease;
+	transition: color 0.2s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease, transform 0.2s ease;
 }
 
 .copy-email-btn:hover {
@@ -328,10 +328,39 @@ h3 {
 .email-icon {
 	width: 18px;
 	height: 18px;
+	transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.check-icon {
+	width: 18px;
+	height: 18px;
+	display: none;
+	color: #22c55e;
+}
+
+.copied-text {
+	display: none;
+	color: #22c55e;
+	font-weight: 500;
+	font-size: 0.85rem;
+}
+
+.email-label {
+	transition: opacity 0.2s ease;
+}
+
+.copy-email-btn.copied .email-icon,
+.copy-email-btn.copied .email-label {
+	display: none;
+}
+
+.copy-email-btn.copied .check-icon,
+.copy-email-btn.copied .copied-text {
+	display: block;
 }
 
 .copy-email-btn.copied {
-	color: var(--accent-primary);
+	color: #22c55e;
 }
 
 /* Theme Toggle Button */
@@ -349,7 +378,7 @@ h3 {
 	box-shadow: 0 0 0 transparent;
 	backdrop-filter: blur(0px);
 	-webkit-backdrop-filter: blur(0px);
-	transition: color 0.6s ease-in-out, background 0.6s ease-in-out, border-color 0.6s ease-in-out, box-shadow 0.6s ease-in-out, backdrop-filter 0.6s ease-in-out, -webkit-backdrop-filter 0.6s ease-in-out, transform 0.3s ease;
+	transition: color 0.2s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease, transform 0.2s ease;
 }
 
 .theme-toggle:hover {
@@ -438,16 +467,24 @@ h3 {
 
 /* Mobile Menu - hidden by default */
 .mobile-menu {
-	display: none;
+	display: flex;
 	flex-direction: column;
 	gap: 1.5rem;
 	padding: 2rem;
 	background: var(--bg-primary);
 	border-top: 1px solid var(--border-color);
+	max-height: 0;
+	overflow: hidden;
+	opacity: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+	transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
 }
 
 .mobile-menu.open {
-	display: flex;
+	max-height: 400px;
+	opacity: 1;
+	padding: 2rem;
 }
 
 .mobile-menu a,
@@ -465,7 +502,7 @@ h3 {
 	backdrop-filter: blur(0px);
 	-webkit-backdrop-filter: blur(0px);
 	width: fit-content;
-	transition: color 0.6s ease-in-out, background 0.6s ease-in-out, border-color 0.6s ease-in-out, box-shadow 0.6s ease-in-out, backdrop-filter 0.6s ease-in-out, -webkit-backdrop-filter 0.6s ease-in-out;
+	transition: color 0.2s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease;
 }
 
 .mobile-menu a:hover,
