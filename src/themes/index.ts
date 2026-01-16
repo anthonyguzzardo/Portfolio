@@ -5,6 +5,7 @@ import type { Theme } from './types';
 import { DEFAULT_THEME_ID } from './constants';
 import { applyTheme, loadThemePreference } from './utils';
 import { domainWarpingTheme } from './domain-warping';
+import { tennisTheme } from './tennis';
 
 // Export types
 export type { Theme, ThemeColors, ThemeConfig, ShaderColors, RGB } from './types';
@@ -16,6 +17,7 @@ export { hexToRgb, rgbToHex } from './constants';
 // Theme registry
 const themes: Map<string, Theme> = new Map([
   ['domain-warping', domainWarpingTheme],
+  ['tennis', tennisTheme],
 ]);
 
 // All available themes (for dropdown population)

@@ -84,41 +84,51 @@ void main() {
   float dist = length(p);
   float baseIntensity = smoothstep(1.3, 0.1, dist);
 
-  // === 3. HARD COLOR REGIONS FROM WARPED COORDS ===
-  // Use noise to define distinct zones - not blended mush
-  float n1 = snoise(warpedPos * 1.8);
-  float n2 = snoise(warpedPos * 2.2 + OFF1);
-  float n3 = snoise(warpedPos * 1.5 + OFF2);
-  float n4 = snoise(warpedPos * 2.8 + OFF3);
+  // === 3. LARGE COLOR REGIONS FROM WARPED COORDS ===
+  // Low frequencies = big expansive areas for each color
+  float n1 = snoise(warpedPos * 0.7);
+  float n2 = snoise(warpedPos * 0.9 + OFF1);
+  float n3 = snoise(warpedPos * 0.6 + OFF2);
 
   // === 4. WARP MODULATION (subtle, not hazy) ===
-  float warpMod = snoise(warpedPos * 1.0 + vec2(t * 0.3)) * 0.12 + 0.94;
+  float warpMod = snoise(warpedPos * 0.5 + vec2(t * 0.3)) * 0.12 + 0.94;
   float intensity = baseIntensity * warpMod;
 
   // === 5. CAUSTIC HIGHLIGHTS (sharp, rare) ===
-  float causticNoise = snoise(warpedPos * 4.0 + vec2(t * 0.4, t * 0.47));
+  float causticNoise = snoise(warpedPos * 2.5 + vec2(t * 0.4, t * 0.47));
   float caustics = smoothstep(0.4, 0.75, causticNoise) * intensity;
 
-  // === 6. BUILD COLOR WITH HARD TRANSITIONS ===
-  // Start with a saturated base, NOT a dark anchor
-  vec3 color = mix(deepTeal, burgundy, smoothstep(-0.2, 0.2, n1));
+  // === 6. BUILD COLOR WITH WIDE REGIONS ===
+  // Each color gets a big chunk of the noise range
 
-  // Layer saturated colors with HARD thresholds
-  float zone1 = smoothstep(0.0, 0.15, n1) * smoothstep(0.6, 0.3, n1);
-  color = mix(color, magenta, zone1 * intensity);
+  // Magenta dominates the positive range
+  float magentaZone = smoothstep(-0.1, 0.3, n1);
 
-  float zone2 = smoothstep(-0.1, 0.1, n2) * smoothstep(0.5, 0.2, n2);
-  color = mix(color, purple, zone2 * intensity);
+  // Purple takes over in negative n1, positive n2
+  float purpleZone = smoothstep(0.2, -0.2, n1) * smoothstep(-0.2, 0.2, n2);
 
-  float zone3 = smoothstep(0.1, 0.3, n3);
-  color = mix(color, royalBlue, zone3 * intensity * 0.85);
+  // Royal blue in its own region
+  float blueZone = smoothstep(-0.1, 0.4, n3) * smoothstep(0.3, -0.1, n1);
 
-  float zone4 = smoothstep(-0.3, -0.1, n4);
-  color = mix(color, deepGreen, zone4 * (1.0 - intensity * 0.5));
+  // Burgundy fills the deep negatives
+  float burgundyZone = smoothstep(0.0, -0.4, n1);
 
-  // Dark accents in the folds
-  float foldDark = smoothstep(0.2, 0.5, n1 + n2);
-  color = mix(color, darkWine, foldDark * 0.4);
+  // Deep teal as grounding anchor
+  float tealZone = smoothstep(0.1, -0.3, n2) * smoothstep(0.0, -0.3, n3);
+
+  // Build color - start with deep green base
+  vec3 color = deepGreen;
+
+  // Layer colors with wide, breathing regions
+  color = mix(color, deepTeal, tealZone * 0.9);
+  color = mix(color, burgundy, burgundyZone * intensity);
+  color = mix(color, royalBlue, blueZone * intensity * 0.9);
+  color = mix(color, purple, purpleZone * intensity);
+  color = mix(color, magenta, magentaZone * intensity);
+
+  // Dark wine only in fold intersections
+  float foldDark = smoothstep(0.3, 0.6, n1 * n2);
+  color = mix(color, darkWine, foldDark * 0.35);
 
   // === 7. SHARP HIGHLIGHTS (not diffuse glow) ===
   // Pink highlights on caustic peaks
