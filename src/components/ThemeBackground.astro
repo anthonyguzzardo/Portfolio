@@ -19,6 +19,22 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
   data-opacity={opacity}
 ></canvas>
 
+<!-- Tile Size Slider (shown for fibers theme) -->
+<div id="tile-slider-container" class="tile-slider-container hidden">
+  <div class="liquid-glass-pill">
+    <label for="tile-slider">Size</label>
+    <input
+      type="range"
+      id="tile-slider"
+      min="0.1"
+      max="200"
+      value="60"
+      step="0.1"
+    />
+    <span id="tile-value">60</span>
+  </div>
+</div>
+
 <style>
   .theme-background {
     position: fixed;
@@ -27,6 +43,99 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
     height: 100%;
     z-index: -1;
     pointer-events: none;
+  }
+
+  .theme-background.interactive {
+    pointer-events: auto;
+    cursor: grab;
+  }
+
+  .theme-background.interactive.dragging {
+    cursor: grabbing;
+  }
+
+  /* Tile Slider */
+  .tile-slider-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+    pointer-events: auto;
+  }
+
+  .tile-slider-container.hidden {
+    display: none;
+  }
+
+  .liquid-glass-pill {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .liquid-glass-pill label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .liquid-glass-pill input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 150px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .liquid-glass-pill input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s ease;
+  }
+
+  .liquid-glass-pill input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
+
+  .liquid-glass-pill input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .liquid-glass-pill #tile-value {
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 32px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 </style>
 
@@ -46,6 +155,16 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
     private animationId: number = 0;
     private currentTheme: Theme | null = null;
     private baseOpacity: number;
+
+    // Mouse interaction state
+    private isInteractive: boolean = false;
+    private hasMouseTracking: boolean = false;
+    private isDragging: boolean = false;
+    private lastMouse: { x: number; y: number } = { x: 0, y: 0 };
+    private rotation: { x: number; y: number } = { x: 0, y: 0 };
+    private velocity: { x: number; y: number } = { x: 0, y: 0 };
+    private readonly DAMPING = 0.95;
+    private readonly SENSITIVITY = 0.005;
 
     constructor(canvas: HTMLCanvasElement) {
       this.canvas = canvas;
@@ -98,15 +217,56 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
         return;
       }
 
+      // Build uniforms object
+      const uniforms: { [key: string]: { value: unknown } } = {
+        u_time: { value: 0 },
+        u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+        u_opacity: { value: this.baseOpacity },
+      };
+
+      // Add custom uniforms from theme
+      if (theme.shaders.uniforms) {
+        for (const [key, uniform] of Object.entries(theme.shaders.uniforms)) {
+          if (key === 'u_time' || key === 'u_resolution' || key === 'u_opacity') continue;
+          if (uniform.type === 'float') {
+            uniforms[key] = { value: uniform.value };
+          } else if (uniform.type === 'vec2') {
+            const v = uniform.value as number[];
+            uniforms[key] = { value: new THREE.Vector2(v[0], v[1]) };
+          }
+        }
+      }
+
+      // Check if theme supports rotation (interactive)
+      this.isInteractive = !!(theme.shaders.uniforms && 'u_rotation' in theme.shaders.uniforms);
+      if (this.isInteractive) {
+        uniforms.u_rotation = { value: new THREE.Vector2(0, 0) };
+        this.canvas.classList.add('interactive');
+        // Reset rotation state for new theme
+        this.rotation = { x: 0, y: 0 };
+        this.velocity = { x: 0, y: 0 };
+      } else {
+        this.canvas.classList.remove('interactive');
+      }
+
+      // Check if theme supports mouse tracking (u_mouse uniform)
+      this.hasMouseTracking = !!(theme.shaders.uniforms && 'u_mouse' in theme.shaders.uniforms);
+
+      // Show/hide tile slider based on theme
+      const sliderContainer = document.getElementById('tile-slider-container');
+      if (sliderContainer) {
+        if (theme.shaders.uniforms && 'u_tileSize' in theme.shaders.uniforms) {
+          sliderContainer.classList.remove('hidden');
+        } else {
+          sliderContainer.classList.add('hidden');
+        }
+      }
+
       // Create shader material
       this.material = new THREE.ShaderMaterial({
         vertexShader: theme.shaders.vertex,
         fragmentShader: theme.shaders.fragment,
-        uniforms: {
-          u_time: { value: 0 },
-          u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-          u_opacity: { value: this.baseOpacity },
-        },
+        uniforms,
         transparent: true,
         depthWrite: false,
       });
@@ -120,6 +280,23 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
     private animate = (): void => {
       if (this.material) {
         this.material.uniforms.u_time.value = this.clock.getElapsedTime();
+
+        // Update rotation with momentum
+        if (this.isInteractive && this.material.uniforms.u_rotation) {
+          if (!this.isDragging) {
+            // Apply velocity when not dragging
+            this.rotation.x += this.velocity.x;
+            this.rotation.y += this.velocity.y;
+            // Apply damping
+            this.velocity.x *= this.DAMPING;
+            this.velocity.y *= this.DAMPING;
+          }
+          // Update uniform
+          (this.material.uniforms.u_rotation.value as THREE.Vector2).set(
+            this.rotation.x,
+            this.rotation.y
+          );
+        }
       }
 
       this.renderer.render(this.scene, this.camera);
@@ -144,9 +321,111 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
       }
     };
 
+    // Mouse handlers for interactive rotation
+    private onMouseDown = (e: MouseEvent): void => {
+      if (!this.isInteractive) return;
+      this.isDragging = true;
+      this.lastMouse = { x: e.clientX, y: e.clientY };
+      this.canvas.classList.add('dragging');
+    };
+
+    private onMouseMove = (e: MouseEvent): void => {
+      // Update u_mouse uniform for mouse tracking themes
+      if (this.hasMouseTracking && this.material && this.material.uniforms.u_mouse) {
+        // Convert to shader coordinates (y-flipped)
+        (this.material.uniforms.u_mouse.value as THREE.Vector2).set(
+          e.clientX,
+          window.innerHeight - e.clientY
+        );
+      }
+
+      // Handle interactive rotation (dragging)
+      if (!this.isDragging || !this.isInteractive) return;
+
+      const deltaX = e.clientX - this.lastMouse.x;
+      const deltaY = e.clientY - this.lastMouse.y;
+
+      // Update rotation (horizontal drag = Y rotation, vertical drag = X rotation)
+      this.rotation.x -= deltaX * this.SENSITIVITY; // Inverted for natural feel
+      this.rotation.y += deltaY * this.SENSITIVITY;
+
+      // Store velocity for momentum
+      this.velocity.x = -deltaX * this.SENSITIVITY;
+      this.velocity.y = deltaY * this.SENSITIVITY;
+
+      this.lastMouse = { x: e.clientX, y: e.clientY };
+    };
+
+    private onMouseUp = (): void => {
+      if (!this.isInteractive) return;
+      this.isDragging = false;
+      this.canvas.classList.remove('dragging');
+    };
+
+    // Touch handlers for mobile
+    private onTouchStart = (e: TouchEvent): void => {
+      if (!this.isInteractive || e.touches.length !== 1) return;
+      this.isDragging = true;
+      this.lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      this.canvas.classList.add('dragging');
+    };
+
+    private onTouchMove = (e: TouchEvent): void => {
+      if (!this.isDragging || !this.isInteractive || e.touches.length !== 1) return;
+
+      const deltaX = e.touches[0].clientX - this.lastMouse.x;
+      const deltaY = e.touches[0].clientY - this.lastMouse.y;
+
+      this.rotation.x -= deltaX * this.SENSITIVITY;
+      this.rotation.y += deltaY * this.SENSITIVITY;
+
+      this.velocity.x = -deltaX * this.SENSITIVITY;
+      this.velocity.y = deltaY * this.SENSITIVITY;
+
+      this.lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
+
+    private onTouchEnd = (): void => {
+      if (!this.isInteractive) return;
+      this.isDragging = false;
+      this.canvas.classList.remove('dragging');
+    };
+
+    private onTileSizeChange = (e: Event): void => {
+      const slider = e.target as HTMLInputElement;
+      const value = parseFloat(slider.value);
+
+      // Update uniform
+      if (this.material && this.material.uniforms.u_tileSize) {
+        this.material.uniforms.u_tileSize.value = value;
+      }
+
+      // Update display value
+      const valueDisplay = document.getElementById('tile-value');
+      if (valueDisplay) {
+        valueDisplay.textContent = String(Math.round(value));
+      }
+    };
+
     private setupEventListeners(): void {
       window.addEventListener('resize', this.onResize);
       window.addEventListener('theme:change', this.onThemeChange as EventListener);
+
+      // Mouse interaction
+      this.canvas.addEventListener('mousedown', this.onMouseDown);
+      window.addEventListener('mousemove', this.onMouseMove);
+      window.addEventListener('mouseup', this.onMouseUp);
+
+      // Touch interaction
+      this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: true });
+      window.addEventListener('touchmove', this.onTouchMove, { passive: true });
+      window.addEventListener('touchend', this.onTouchEnd);
+
+      // Tile size slider
+      const tileSlider = document.getElementById('tile-slider');
+      if (tileSlider) {
+        tileSlider.addEventListener('input', this.onTileSizeChange);
+      }
 
       // Cleanup on page navigation (Astro)
       document.addEventListener('astro:before-swap', this.dispose);
@@ -166,6 +445,20 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
       window.removeEventListener('resize', this.onResize);
       window.removeEventListener('theme:change', this.onThemeChange as EventListener);
       document.removeEventListener('astro:before-swap', this.dispose);
+
+      // Clean up mouse/touch listeners
+      this.canvas.removeEventListener('mousedown', this.onMouseDown);
+      window.removeEventListener('mousemove', this.onMouseMove);
+      window.removeEventListener('mouseup', this.onMouseUp);
+      this.canvas.removeEventListener('touchstart', this.onTouchStart);
+      window.removeEventListener('touchmove', this.onTouchMove);
+      window.removeEventListener('touchend', this.onTouchEnd);
+
+      // Clean up slider listener
+      const tileSlider = document.getElementById('tile-slider');
+      if (tileSlider) {
+        tileSlider.removeEventListener('input', this.onTileSizeChange);
+      }
     };
   }
 

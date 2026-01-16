@@ -6,6 +6,8 @@ import { DEFAULT_THEME_ID } from './constants';
 import { applyTheme, loadThemePreference } from './utils';
 import { domainWarpingTheme } from './domain-warping';
 import { tennisTheme } from './tennis';
+import { fibersTheme } from './fibers';
+import { trianglesTheme } from './triangles';
 
 // Export types
 export type { Theme, ThemeColors, ThemeConfig, ShaderColors, RGB } from './types';
@@ -18,6 +20,8 @@ export { hexToRgb, rgbToHex } from './constants';
 const themes: Map<string, Theme> = new Map([
   ['domain-warping', domainWarpingTheme],
   ['tennis', tennisTheme],
+  ['fibers', fibersTheme],
+  ['triangles', trianglesTheme],
 ]);
 
 // All available themes (for dropdown population)

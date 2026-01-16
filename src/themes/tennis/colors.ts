@@ -1,28 +1,28 @@
 // Tennis Theme Colors
-// Placeholder - black screen for now
+// Optic yellow tennis ball inspired palette
 
 import type { ThemeColors } from '../types';
 
 export const colors: ThemeColors = {
-  // Backgrounds
-  background: '#000000',
-  backgroundAlt: '#0a0a0a',
+  // Backgrounds - dark court surface
+  background: '#0a0a08',
+  backgroundAlt: '#121210',
 
-  // Surfaces
-  surface: '#111111',
-  surfaceHover: '#1a1a1a',
+  // Surfaces - slightly warm dark
+  surface: '#161614',
+  surfaceHover: '#1e1e1a',
 
   // Text
-  text: '#ffffff',
-  textMuted: '#888888',
-  textInverse: '#000000',
+  text: '#f5f5f0',
+  textMuted: '#8a8a80',
+  textInverse: '#0a0a08',
 
-  // Accents - tennis ball yellow-green placeholder
+  // Accents - tennis ball optic yellow
   accent: '#ccff00',
-  accentHover: '#d4ff33',
-  accentMuted: '#99cc00',
+  accentHover: '#e0ff4d',
+  accentMuted: '#99bf00',
 
-  // Borders
-  border: '#333333',
-  borderMuted: '#222222',
+  // Borders - warm grays
+  border: '#2a2a26',
+  borderMuted: '#1e1e1a',
 };
