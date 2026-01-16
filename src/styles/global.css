@@ -120,7 +120,138 @@ h3 {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	gap: 2rem;
+	gap: 1rem;
+}
+
+/* ==========================================
+   LIQUID GLASS PILL - The main nav capsule
+   ========================================== */
+.nav-glass-pill {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex: 1;
+	gap: 1.5rem;
+	padding: 0.5rem 1rem;
+	border-radius: 999px;
+	position: relative;
+
+	/* Glass material - dark theme base */
+	background: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.08) 0%,
+		rgba(255, 255, 255, 0.04) 50%,
+		rgba(255, 255, 255, 0.02) 100%
+	);
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
+
+	/* Border with gradient for liquid edge */
+	border: 1px solid rgba(255, 255, 255, 0.12);
+
+	/* Layered shadows for depth + liquid highlight */
+	box-shadow:
+		/* Outer shadow for floating effect */
+		0 4px 24px -4px rgba(0, 0, 0, 0.3),
+		0 2px 8px -2px rgba(0, 0, 0, 0.2),
+		/* Inner top highlight - liquid reflection */
+		inset 0 1px 1px rgba(255, 255, 255, 0.1),
+		/* Inner bottom shadow - depth */
+		inset 0 -1px 1px rgba(0, 0, 0, 0.1);
+
+	transition: all 0.3s ease;
+}
+
+/* Subtle shine overlay for liquid effect */
+.nav-glass-pill::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 10%;
+	right: 10%;
+	height: 1px;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.2) 30%,
+		rgba(255, 255, 255, 0.3) 50%,
+		rgba(255, 255, 255, 0.2) 70%,
+		transparent 100%
+	);
+	border-radius: 999px;
+}
+
+/* Mobile glass pill - smaller, right aligned */
+.nav-glass-pill-mobile {
+	display: none;
+	flex: 0;
+	padding: 0.375rem 0.5rem;
+}
+
+/* Light theme - brighter, more vibrant glass */
+[data-theme="light"] .nav-glass-pill {
+	background: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.7) 0%,
+		rgba(255, 255, 255, 0.5) 50%,
+		rgba(255, 255, 255, 0.4) 100%
+	);
+	border: 1px solid rgba(255, 255, 255, 0.8);
+	box-shadow:
+		/* Outer shadow */
+		0 4px 24px -4px rgba(0, 0, 0, 0.1),
+		0 2px 8px -2px rgba(0, 0, 0, 0.06),
+		/* Strong inner highlight */
+		inset 0 2px 4px rgba(255, 255, 255, 0.9),
+		inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .nav-glass-pill::before {
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.8) 30%,
+		rgba(255, 255, 255, 1) 50%,
+		rgba(255, 255, 255, 0.8) 70%,
+		transparent 100%
+	);
+}
+
+/* Remove individual item glass effects - pill handles it now */
+.nav-glass-pill .nav-logo,
+.nav-glass-pill .nav-left > a:not(.nav-logo),
+.nav-glass-pill .nav-right a,
+.nav-glass-pill .theme-toggle,
+.nav-glass-pill .theme-dropdown-btn,
+.nav-glass-pill .copy-email-btn {
+	background: transparent !important;
+	border: none !important;
+	box-shadow: none !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+
+.nav-glass-pill .nav-logo,
+.nav-glass-pill .nav-left > a:not(.nav-logo),
+.nav-glass-pill .nav-right a {
+	padding: 0.375rem 0.75rem;
+}
+
+/* Override light theme individual styles when inside glass pill */
+[data-theme="light"] .nav-glass-pill .nav-logo,
+[data-theme="light"] .nav-glass-pill .nav-logo:hover,
+[data-theme="light"] .nav-glass-pill .nav-right a,
+[data-theme="light"] .nav-glass-pill .nav-right a:hover,
+[data-theme="light"] .nav-glass-pill .nav-left > a:not(.nav-logo),
+[data-theme="light"] .nav-glass-pill .nav-left > a:not(.nav-logo):hover,
+[data-theme="light"] .nav-glass-pill .theme-toggle,
+[data-theme="light"] .nav-glass-pill .theme-dropdown-btn,
+[data-theme="light"] .nav-glass-pill .copy-email-btn {
+	background: transparent !important;
+	border: none !important;
+	box-shadow: none !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
 }
 
 .nav-left {
@@ -409,6 +540,239 @@ h3 {
 	display: block;
 }
 
+/* Theme Dropdown (index page only) */
+.theme-dropdown {
+	position: relative;
+}
+
+.theme-dropdown-btn {
+	cursor: pointer;
+	color: var(--text-secondary);
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	background: transparent;
+	border: 1px solid transparent;
+	padding: 0.5rem;
+	border-radius: 50px;
+	transition: color 0.2s ease, background 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-dropdown-btn:hover {
+	color: var(--text-primary);
+}
+
+.theme-dropdown-btn .palette-icon {
+	width: 20px;
+	height: 20px;
+}
+
+.theme-dropdown-btn .chevron-icon {
+	width: 14px;
+	height: 14px;
+	transition: transform 0.2s ease;
+}
+
+.theme-dropdown.open .chevron-icon {
+	transform: rotate(180deg);
+}
+
+.theme-dropdown-menu {
+	position: absolute;
+	top: calc(100% + 0.5rem);
+	right: 0;
+	min-width: 180px;
+	border-radius: 16px;
+	padding: 0.5rem;
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(-8px);
+	transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+	z-index: 1000;
+
+	/* Liquid glass - dark theme */
+	background: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.1) 0%,
+		rgba(255, 255, 255, 0.05) 50%,
+		rgba(255, 255, 255, 0.02) 100%
+	);
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	box-shadow:
+		0 8px 32px -4px rgba(0, 0, 0, 0.4),
+		0 4px 16px -2px rgba(0, 0, 0, 0.2),
+		inset 0 1px 1px rgba(255, 255, 255, 0.1),
+		inset 0 -1px 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Liquid shine on dropdown */
+.theme-dropdown-menu::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 15%;
+	right: 15%;
+	height: 1px;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.2) 30%,
+		rgba(255, 255, 255, 0.3) 50%,
+		rgba(255, 255, 255, 0.2) 70%,
+		transparent 100%
+	);
+	border-radius: 999px;
+}
+
+.theme-dropdown.open .theme-dropdown-menu {
+	opacity: 1;
+	visibility: visible;
+	transform: translateY(0);
+}
+
+.theme-dropdown-empty {
+	padding: 1rem;
+	text-align: center;
+	color: var(--text-secondary);
+	font-size: 0.875rem;
+}
+
+.theme-dropdown-item {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	width: 100%;
+	padding: 0.625rem 0.75rem;
+	border-radius: 50px;
+	color: var(--text-primary);
+	font-size: 0.875rem;
+	font-family: inherit;
+	cursor: pointer;
+
+	/* Liquid glass - dark theme */
+	background: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.06) 0%,
+		rgba(255, 255, 255, 0.02) 100%
+	);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.06),
+		inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+
+	transition: all 0.2s ease;
+}
+
+.theme-dropdown-item:hover {
+	background: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.12) 0%,
+		rgba(255, 255, 255, 0.06) 100%
+	);
+	border-color: rgba(255, 255, 255, 0.15);
+	box-shadow:
+		0 2px 8px rgba(0, 0, 0, 0.2),
+		inset 0 1px 0 rgba(255, 255, 255, 0.1),
+		inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+	transform: translateY(-1px);
+}
+
+.theme-dropdown-item.active {
+	background: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.15) 0%,
+		rgba(255, 255, 255, 0.08) 100%
+	);
+	border-color: rgba(255, 255, 255, 0.2);
+	box-shadow:
+		0 2px 8px rgba(0, 0, 0, 0.15),
+		inset 0 1px 0 rgba(255, 255, 255, 0.12),
+		inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.theme-dropdown-item .theme-preview {
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	border: 2px solid rgba(255, 255, 255, 0.2);
+	box-shadow:
+		0 2px 4px rgba(0, 0, 0, 0.2),
+		inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Light theme dropdown items */
+[data-theme="light"] .theme-dropdown-item {
+	background: rgba(255, 255, 255, 0.5);
+	border: 1px solid rgba(255, 255, 255, 0.7);
+	box-shadow:
+		0 2px 4px rgba(0, 0, 0, 0.04),
+		inset 0 1px 0 rgba(255, 255, 255, 0.9),
+		inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .theme-dropdown-item:hover {
+	background: rgba(255, 255, 255, 0.7);
+	border-color: rgba(255, 255, 255, 0.9);
+	box-shadow:
+		0 4px 12px rgba(0, 0, 0, 0.08),
+		inset 0 1px 0 rgba(255, 255, 255, 1),
+		inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+	transform: translateY(-1px);
+}
+
+[data-theme="light"] .theme-dropdown-item.active {
+	background: rgba(255, 255, 255, 0.8);
+	border-color: rgba(255, 255, 255, 1);
+}
+
+[data-theme="light"] .theme-dropdown-item .theme-preview {
+	border-color: rgba(0, 0, 0, 0.1);
+	box-shadow:
+		0 2px 4px rgba(0, 0, 0, 0.1),
+		inset 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="light"] .theme-dropdown-btn {
+	background: rgba(255, 255, 255, 0.45);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .theme-dropdown-btn:hover {
+	background: rgba(255, 255, 255, 0.65);
+	border-color: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="light"] .theme-dropdown-menu {
+	background: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.8) 0%,
+		rgba(255, 255, 255, 0.6) 50%,
+		rgba(255, 255, 255, 0.5) 100%
+	);
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
+	border: 1px solid rgba(255, 255, 255, 0.9);
+	box-shadow:
+		0 8px 32px -4px rgba(0, 0, 0, 0.15),
+		0 4px 16px -2px rgba(0, 0, 0, 0.08),
+		inset 0 2px 4px rgba(255, 255, 255, 0.9),
+		inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .theme-dropdown-menu::before {
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.9) 30%,
+		rgba(255, 255, 255, 1) 50%,
+		rgba(255, 255, 255, 0.9) 70%,
+		transparent 100%
+	);
+}
 
 .nav-cta {
 	padding: 0.5rem 1rem;
@@ -561,6 +925,21 @@ h3 {
 
 	.nav-container {
 		justify-content: space-between;
+	}
+
+	/* Desktop pill becomes just logo container on mobile */
+	.nav-glass-pill:not(.nav-glass-pill-mobile) {
+		flex: 0;
+		padding: 0.375rem 0.75rem;
+	}
+
+	.nav-glass-pill:not(.nav-glass-pill-mobile) .nav-right {
+		display: none;
+	}
+
+	/* Show mobile glass pill */
+	.nav-glass-pill-mobile {
+		display: flex;
 	}
 }
 

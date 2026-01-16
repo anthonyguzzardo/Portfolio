@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import '../styles/rangley-styles.css';
 import Nav from '../components/Nav.astro';
+import ThemeBackground from '../components/ThemeBackground.astro';
 
 interface Props {
 	title: string;
@@ -20,11 +21,15 @@ const { title, description = 'Anthony Guzzardo - Full-stack Developer' } = Astro
 		<title>{title}</title>
 		<meta name="description" content={description} />
 		<script is:inline>
-			const theme = localStorage.getItem('theme') || 'dark';
-			document.documentElement.setAttribute('data-theme', theme);
+			// Load saved theme preference for initial render (prevents flash)
+			const savedTheme = localStorage.getItem('portfolio-theme') || 'domain-warping';
+			document.documentElement.setAttribute('data-theme', savedTheme);
+			// Set dark mode class based on theme (domain-warping is dark)
+			document.documentElement.classList.add('dark');
 		</script>
 	</head>
 	<body>
+		<ThemeBackground />
 		<Nav />
 
 		<slot />

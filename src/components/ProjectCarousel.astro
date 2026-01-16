@@ -1,7 +1,5 @@
 ---
-// ProjectCarousel.astro - Infinite scrolling with center LED pixelation
-// Dark theme: Black hole with accretion disk
-// Light theme: Flow gradient (NO distortion)
+// ProjectCarousel.astro - Infinite scrolling text carousel
 ---
 
 <div class="carousel-section">
@@ -14,7 +12,6 @@
     width: 100%;
     height: 200px;
     background: transparent;
-    transition: background 0.3s ease;
     overflow: visible;
     margin-top: 12rem;
   }
@@ -25,7 +22,7 @@
     top: 50%;
     transform: translateY(-50%);
     width: 100%;
-    height: 500%;
+    height: 100%;
     display: block;
     pointer-events: auto;
   }
@@ -39,9 +36,6 @@
 
 <script>
   import * as THREE from 'three';
-  import { blackHoleVertexShader, blackHoleFragmentShader, BLACK_HOLE_DEFAULTS } from './shaders/BlackHoleShader';
-  import { flowGradientVertexShader, flowGradientFragmentShader } from './shaders/FlowGradientShader';
-  import { ledTextVertexShader, ledTextFragmentShader } from './shaders/LEDTextShader';
 
   // ============================================
   // TYPES
@@ -81,7 +75,6 @@
     const isLight = theme === 'light';
     return {
       text: isLight ? '#111111' : '#ffffff',
-      bg: 'transparent',
       isLight
     };
   }
@@ -107,7 +100,7 @@
   const scene = new THREE.Scene();
 
   let width = container.clientWidth;
-  let height = container.clientHeight * 5;
+  let height = container.clientHeight;
 
   const camera = new THREE.OrthographicCamera(
     -width / 2, width / 2,
@@ -115,6 +108,35 @@
     -1000, 1000
   );
   camera.position.z = 100;
+
+  // ============================================
+  // SIMPLE VERTEX/FRAGMENT SHADERS
+  // ============================================
+  const vertexShader = `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const fragmentShader = `
+    precision highp float;
+    uniform sampler2D uTexture;
+    uniform float uHover;
+    uniform float uIsLightTheme;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 texColor = texture2D(uTexture, vUv);
+      vec3 color = texColor.rgb;
+
+      // Hover effect: slight color boost
+      color *= 1.0 + uHover * 0.3;
+
+      gl_FragColor = vec4(color, texColor.a);
+    }
+  `;
 
   // ============================================
   // TEXTURE CREATION
@@ -189,7 +211,6 @@
   const fontSize = Math.min(100, width * 0.1);
   const textureHeight = Math.ceil(fontSize * 1.4);
   const gap = 120;
-  const pixelSize = 3.0;
 
   // Calculate total width
   let totalWidth = 0;
@@ -236,17 +257,11 @@
       const material = new THREE.ShaderMaterial({
         uniforms: {
           uTexture: { value: texture },
-          uTime: { value: 0 },
-          uScreenWidth: { value: width },
-          uTextureSize: { value: new THREE.Vector2(texWidth, texHeight) },
-          uPixelSize: { value: pixelSize },
           uHover: { value: 0.0 },
           uIsLightTheme: { value: isLightTheme() ? 1.0 : 0.0 },
-          uBlackHoleRadius: { value: BLACK_HOLE_DEFAULTS.blackHoleRadius },
-          uAccretionRadius: { value: BLACK_HOLE_DEFAULTS.accretionRadius },
         },
-        vertexShader: ledTextVertexShader,
-        fragmentShader: ledTextFragmentShader,
+        vertexShader,
+        fragmentShader,
         transparent: true,
         depthWrite: false,
       });
@@ -274,64 +289,12 @@
   }
 
   // ============================================
-  // BACKGROUND MESHES
-  // ============================================
-  const glowWidth = width * 1.5;
-  const glowHeight = height * 1.2;
-  const glowGeometry = new THREE.PlaneGeometry(glowWidth, glowHeight);
-
-  // Dark theme: Black hole
-  const initialScale = isLightTheme() ? 0.0 : 1.0;
-  const blackHoleMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-      uTime: { value: 0 },
-      uResolution: { value: new THREE.Vector2(glowWidth, glowHeight) },
-      uIsLightTheme: { value: isLightTheme() ? 1.0 : 0.0 },
-      uBlackHoleRadius: { value: BLACK_HOLE_DEFAULTS.blackHoleRadius * initialScale },
-      uAccretionRadius: { value: BLACK_HOLE_DEFAULTS.accretionRadius * initialScale },
-      uOpacity: { value: initialScale },
-    },
-    vertexShader: blackHoleVertexShader,
-    fragmentShader: blackHoleFragmentShader,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
-
-  const blackHoleMesh = new THREE.Mesh(glowGeometry, blackHoleMaterial);
-  blackHoleMesh.position.z = -10;
-  scene.add(blackHoleMesh);
-
-  // Light theme: Flow gradient
-  const flowGradientMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-      u_time: { value: 0 },
-      u_resolution: { value: new THREE.Vector2(glowWidth, glowHeight) },
-      u_opacity: { value: isLightTheme() ? 1.0 : 0.0 },
-    },
-    vertexShader: flowGradientVertexShader,
-    fragmentShader: flowGradientFragmentShader,
-    transparent: true,
-    depthWrite: false,
-  });
-
-  const flowMesh = new THREE.Mesh(glowGeometry.clone(), flowGradientMaterial);
-  flowMesh.position.z = -11;
-  scene.add(flowMesh);
-
-  // ============================================
   // ANIMATION
   // ============================================
   let scrollX = 0;
   const scrollSpeed = 1.2;
-  let time = 0;
   let lastTime = performance.now();
   let hoveredItem: ProjectMesh | null = null;
-
-  // Theme transition
-  let targetFlowOpacity = isLightTheme() ? 1.0 : 0.0;
-  let targetBlackHoleScale = isLightTheme() ? 0.0 : 1.0;
-  const transitionSpeed = 0.04;
 
   function animate() {
     requestAnimationFrame(animate);
@@ -340,7 +303,6 @@
     const delta = Math.min((now - lastTime) / 16.67, 3);
     lastTime = now;
 
-    time += 0.016 * delta;
     scrollX += scrollSpeed * delta;
 
     if (scrollX > totalWidth) {
@@ -355,8 +317,6 @@
       x -= wrapWidth / 2;
 
       item.mesh.position.x = x;
-      item.material.uniforms.uTime.value = time;
-      item.material.uniforms.uScreenWidth.value = width;
 
       const targetHover = item === hoveredItem ? 1.0 : 0.0;
       const currentHover = item.material.uniforms.uHover.value;
@@ -368,20 +328,6 @@
       item.mesh.scale.set(scale, scale, 1);
     });
 
-    blackHoleMaterial.uniforms.uTime.value = time;
-    flowGradientMaterial.uniforms.u_time.value = time;
-
-    // Smooth theme transition
-    const currentFlowOpacity = flowGradientMaterial.uniforms.u_opacity.value;
-    flowGradientMaterial.uniforms.u_opacity.value += (targetFlowOpacity - currentFlowOpacity) * transitionSpeed * delta;
-
-    // Black hole expands/shrinks
-    const currentScale = blackHoleMaterial.uniforms.uBlackHoleRadius.value / BLACK_HOLE_DEFAULTS.blackHoleRadius;
-    const newScale = currentScale + (targetBlackHoleScale - currentScale) * transitionSpeed * delta;
-    blackHoleMaterial.uniforms.uBlackHoleRadius.value = newScale * BLACK_HOLE_DEFAULTS.blackHoleRadius;
-    blackHoleMaterial.uniforms.uAccretionRadius.value = newScale * BLACK_HOLE_DEFAULTS.accretionRadius;
-    blackHoleMaterial.uniforms.uOpacity.value = newScale; // Fade with scale
-
     renderer.render(scene, camera);
   }
 
@@ -390,7 +336,7 @@
   // ============================================
   function onResize() {
     width = container.clientWidth;
-    height = container.clientHeight * 5;
+    height = container.clientHeight;
 
     renderer.setSize(width, height);
 
@@ -399,17 +345,6 @@
     camera.top = height / 2;
     camera.bottom = -height / 2;
     camera.updateProjectionMatrix();
-
-    const newGlowWidth = width * 1.5;
-    const newGlowHeight = height * 1.2;
-
-    blackHoleMesh.geometry.dispose();
-    blackHoleMesh.geometry = new THREE.PlaneGeometry(newGlowWidth, newGlowHeight);
-    blackHoleMaterial.uniforms.uResolution.value.set(newGlowWidth, newGlowHeight);
-
-    flowMesh.geometry.dispose();
-    flowMesh.geometry = new THREE.PlaneGeometry(newGlowWidth, newGlowHeight);
-    flowGradientMaterial.uniforms.u_resolution.value.set(newGlowWidth, newGlowHeight);
   }
 
   window.addEventListener('resize', onResize);
@@ -464,10 +399,6 @@
   const observer = new MutationObserver(() => {
     const lightTheme = isLightTheme();
 
-    // Set targets for smooth transition
-    targetBlackHoleScale = lightTheme ? 0.0 : 1.0;
-    targetFlowOpacity = lightTheme ? 1.0 : 0.0;
-
     projectMeshes.forEach((item) => {
       item.material.uniforms.uIsLightTheme.value = lightTheme ? 1.0 : 0.0;
 
@@ -476,10 +407,7 @@
       const newTexture = createTextTexture(item.project.name, fontSize);
       item.material.uniforms.uTexture.value.dispose();
       item.material.uniforms.uTexture.value = newTexture;
-      item.material.uniforms.uTextureSize.value.set(newTexture.image.width, newTexture.image.height);
     });
-
-    blackHoleMaterial.uniforms.uIsLightTheme.value = lightTheme ? 1.0 : 0.0;
   });
 
   observer.observe(document.documentElement, {

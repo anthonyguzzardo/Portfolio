@@ -1,10 +1,13 @@
 ---
+import { allThemes } from '../themes';
+
 const pathname = Astro.url.pathname;
 const isHome = pathname === '/';
 ---
 <nav class={`nav ${isHome ? 'nav-transparent' : ''}`}>
   <div class="container nav-container">
-    <div class="nav-left">
+    <div class="nav-glass-pill">
+      <div class="nav-left">
       <a href="/" class="nav-logo">
         <span class="nav-name">Anthony Guzzardo</span>
         <span class="nav-location">Chicago</span>
@@ -26,33 +29,94 @@ const isHome = pathname === '/';
       </button>
       <a href="https://github.com/anthonyguzzardo" target="_blank">GitHub</a>
       <a href="https://www.linkedin.com/in/anthony-guzzardo" target="_blank">LinkedIn</a>
-      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
-        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="5"/>
-          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-        </svg>
-        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-      </button>
+{isHome ? (
+        <div class="theme-dropdown">
+          <button id="theme-dropdown-btn" class="theme-dropdown-btn" aria-label="Select theme">
+            <svg class="palette-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="8" r="1.5" fill="currentColor"/>
+              <circle cx="8" cy="12" r="1.5" fill="currentColor"/>
+              <circle cx="16" cy="12" r="1.5" fill="currentColor"/>
+              <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
+            </svg>
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+          <div class="theme-dropdown-menu">
+            {allThemes.map((theme) => (
+              <button
+                class="theme-dropdown-item"
+                data-theme-id={theme.config.id}
+                title={theme.config.description}
+              >
+                <span class="theme-preview" style={`background: ${theme.config.previewColor}`}></span>
+                <span class="theme-name">{theme.config.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      )}
+    </div>
     </div>
 
-    <!-- Mobile: Theme toggle + Hamburger -->
-    <div class="nav-mobile-controls">
-      <button id="theme-toggle-mobile" class="theme-toggle" aria-label="Toggle theme">
-        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="5"/>
-          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-        </svg>
-        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-      </button>
+    <!-- Mobile: Glass pill with controls -->
+    <div class="nav-glass-pill nav-glass-pill-mobile">
+      <div class="nav-mobile-controls">
+      {isHome ? (
+        <div class="theme-dropdown theme-dropdown-mobile">
+          <button id="theme-dropdown-btn-mobile" class="theme-dropdown-btn" aria-label="Select theme">
+            <svg class="palette-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="8" r="1.5" fill="currentColor"/>
+              <circle cx="8" cy="12" r="1.5" fill="currentColor"/>
+              <circle cx="16" cy="12" r="1.5" fill="currentColor"/>
+              <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
+            </svg>
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+          <div class="theme-dropdown-menu">
+            {allThemes.map((theme) => (
+              <button
+                class="theme-dropdown-item"
+                data-theme-id={theme.config.id}
+                title={theme.config.description}
+              >
+                <span class="theme-preview" style={`background: ${theme.config.previewColor}`}></span>
+                <span class="theme-name">{theme.config.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <button id="theme-toggle-mobile" class="theme-toggle" aria-label="Toggle theme">
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      )}
       <button id="hamburger" class="hamburger" aria-label="Toggle menu">
         <span class="hamburger-line"></span>
         <span class="hamburger-line"></span>
         <span class="hamburger-line"></span>
       </button>
+      </div>
     </div>
   </div>
 
@@ -77,22 +141,75 @@ const isHome = pathname === '/';
 </nav>
 
 <script>
+  import { setTheme, loadThemePreference, getTheme } from '../themes';
+
   const html = document.documentElement;
+  const THEME_STORAGE_KEY = 'portfolio-theme';
+  const DEFAULT_THEME = 'domain-warping';
 
-  // Check for saved preference or default to dark
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  html.setAttribute('data-theme', savedTheme);
+  // Get current theme ID
+  function getCurrentThemeId(): string {
+    return loadThemePreference() || DEFAULT_THEME;
+  }
 
-  // Theme toggle (both desktop and mobile)
+  // Update active state in dropdown
+  function updateActiveTheme(themeId: string) {
+    document.querySelectorAll('.theme-dropdown-item').forEach((item) => {
+      const itemThemeId = (item as HTMLElement).dataset.themeId;
+      item.classList.toggle('active', itemThemeId === themeId);
+    });
+  }
+
+  // Initialize theme on page load
+  const currentThemeId = getCurrentThemeId();
+  updateActiveTheme(currentThemeId);
+
+  // Theme toggle for non-index pages (sun/moon) - toggles dark/light mode
   function toggleTheme() {
     const current = html.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
+    html.classList.toggle('dark', next === 'dark');
     localStorage.setItem('theme', next);
   }
 
   document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
   document.getElementById('theme-toggle-mobile')?.addEventListener('click', toggleTheme);
+
+  // Theme dropdown for index page
+  function setupDropdown(btnId: string) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+
+    const dropdown = btn.closest('.theme-dropdown');
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown?.classList.toggle('open');
+    });
+  }
+
+  setupDropdown('theme-dropdown-btn');
+  setupDropdown('theme-dropdown-btn-mobile');
+
+  // Handle theme selection from dropdown
+  document.querySelectorAll('.theme-dropdown-item').forEach((item) => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const themeId = (item as HTMLElement).dataset.themeId;
+      if (themeId) {
+        setTheme(themeId);
+        updateActiveTheme(themeId);
+        // Close all dropdowns
+        document.querySelectorAll('.theme-dropdown.open').forEach(d => d.classList.remove('open'));
+      }
+    });
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.theme-dropdown.open').forEach(d => d.classList.remove('open'));
+  });
 
   // Copy email function
   async function copyEmail(btn: HTMLElement) {
