@@ -1,27 +1,28 @@
 // Fibers Theme Colors
+// Tennis ball felt aesthetic
 
 import type { ThemeColors } from '../types';
 
 export const colors: ThemeColors = {
-  // Backgrounds - charcoal
-  background: '#0d0b0a',
-  backgroundAlt: '#141110',
+  // Backgrounds - deep tennis green
+  background: '#0a1209',
+  backgroundAlt: '#0f1a0d',
 
-  // Surfaces - dark rock
-  surface: '#1a1614',
-  surfaceHover: '#241e1a',
+  // Surfaces - felt-like muted green
+  surface: '#1a2816',
+  surfaceHover: '#243520',
 
   // Text
-  text: '#f5f0eb',
-  textMuted: '#8a7a6a',
-  textInverse: '#0d0b0a',
+  text: '#e8f0e0',
+  textMuted: '#7a9068',
+  textInverse: '#0a1209',
 
-  // Accents - lava orange
-  accent: '#ffffff',
-  accentHover: '#ffffff',
-  accentMuted: '#ffffff',
+  // Accents - tennis ball yellow
+  accent: '#d9f026',
+  accentHover: '#e5f74d',
+  accentMuted: '#8fa31a',
 
-  // Borders - ember glow
-  border: '#3d2a1a',
-  borderMuted: '#2a1d12',
+  // Borders - fiber-like subtle lines
+  border: '#2d4025',
+  borderMuted: '#1f2d1a',
 };
