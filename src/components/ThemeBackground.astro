@@ -41,6 +41,11 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
     <div class="gui-section">
       <h4>Fiber</h4>
       <div class="gui-row">
+        <label>Scale</label>
+        <input type="range" data-uniform="u_scale" min="0.05" max="2.0" value="1.0" step="0.05" />
+        <span class="gui-value">1.0</span>
+      </div>
+      <div class="gui-row">
         <label>Radius</label>
         <input type="range" data-uniform="u_radius" min="0.005" max="0.05" value="0.018" step="0.001" />
         <span class="gui-value">0.018</span>

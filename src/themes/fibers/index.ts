@@ -17,6 +17,7 @@ export const fibersTheme: Theme = {
       u_opacity: { value: 1.0, type: 'float' },
 
       // Fiber parameters
+      u_scale: { value: 1.0, type: 'float' },
       u_radius: { value: 0.018, type: 'float' },
       u_sharpness: { value: 8.0, type: 'float' },
       u_length: { value: 0.8, type: 'float' },

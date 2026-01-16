@@ -1,5 +1,5 @@
 // Fibers Theme Fragment Shader
-// Single tennis fiber with bending, kink, and full lighting
+// Hair/fur/felt - fibers rooted at one end, extending outward
 
 export const fragmentShader = `
 precision highp float;
@@ -9,14 +9,15 @@ uniform vec2 u_resolution;
 uniform float u_opacity;
 
 // Fiber parameters (GUI controlled)
+uniform float u_scale;
 uniform float u_radius;
 uniform float u_sharpness;
 uniform float u_length;
 uniform float u_texture;
-uniform float u_angle;
+uniform float u_angle;      // Base direction (degrees)
 uniform float u_curve;
-uniform float u_bend;
-uniform float u_kink;
+uniform float u_bend;       // How much fibers bend
+uniform float u_kink;       // Angle randomness (spread)
 
 // Lighting parameters (GUI controlled)
 uniform float u_lightAngle;
@@ -26,11 +27,16 @@ uniform float u_glossiness;
 
 varying vec2 vUv;
 
+#define PI 3.14159265359
+
 // ============================================
-// NOISE FUNCTIONS
+// HASH FUNCTIONS
 // ============================================
 float hash(float n) { return fract(sin(n) * 43758.5453123); }
-float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+vec2 hash2(vec2 p) {
+  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+  return fract(sin(p) * 43758.5453);
+}
 
 float noise1D(float x) {
   float i = floor(x);
@@ -39,99 +45,100 @@ float noise1D(float x) {
   return mix(hash(i), hash(i + 1.0), f) * 2.0 - 1.0;
 }
 
-float fbm(vec2 p) {
-  float v = 0.0;
-  float a = 0.5;
-  vec2 shift = vec2(100.0);
-  for (int i = 0; i < 4; i++) {
-    v += a * hash2(p);
-    p = p * 2.0 + shift;
-    a *= 0.5;
-  }
-  return v;
+// ============================================
+// FIBER SDF - rooted at origin, extending in direction
+// Returns: x = distance to fiber, y = t along fiber (0=root, 1=tip)
+// ============================================
+vec2 fiberSDF(vec2 p, vec2 root, vec2 dir, float len, float bend, float seed) {
+  vec2 perpDir = vec2(-dir.y, dir.x);
+  vec2 toP = p - root;
+
+  // Project onto fiber direction
+  float t = dot(toP, dir);
+  t = clamp(t, 0.0, len); // 0 at root, len at tip
+
+  // Normalized position along fiber
+  float tNorm = t / len;
+
+  // Bend: parabolic curve, max at tip
+  float bendOffset = bend * len * tNorm * tNorm;
+
+  // Small wobble
+  float wobble = noise1D(tNorm * 4.0 + seed) * len * 0.02;
+
+  // Point on fiber
+  vec2 fiberPt = root + t * dir + (bendOffset + wobble) * perpDir;
+
+  return vec2(length(p - fiberPt), tNorm);
 }
 
 // ============================================
-// DISTANCE: Point to infinite line
+// FIBER PROFILE - softer at tip
 // ============================================
-vec2 pointToLine(vec2 p, vec2 origin, vec2 dir) {
-  vec2 w = p - origin;
-  float t = dot(w, dir);
-  vec2 closest = origin + t * dir;
-  return vec2(length(p - closest), t);
-}
-
-// ============================================
-// CURVED FIBER: Get point on bent fiber at parameter t
-// ============================================
-vec2 getCurvedFiberPoint(float t, float halfLen, vec2 fiberDir, vec2 fiberOrigin, float bend, float kink) {
-  vec2 perpDir = vec2(-fiberDir.y, fiberDir.x);
-
-  // Normalize t to [-1, 1]
-  float tNorm = t / halfLen;
-
-  // Arc bend: parabolic curve (max displacement at center)
-  float arcOffset = bend * 0.1 * (1.0 - tNorm * tNorm);
-
-  // Kink: random wobble using noise
-  float kinkOffset = 0.0;
-  if (kink > 0.0) {
-    kinkOffset += noise1D(t * 8.0 + 123.0) * kink * 0.03;
-    kinkOffset += noise1D(t * 20.0 + 456.0) * kink * 0.015;
-    kinkOffset += noise1D(t * 45.0 + 789.0) * kink * 0.008;
-  }
-
-  float totalOffset = arcOffset + kinkOffset;
-
-  return fiberOrigin + t * fiberDir + totalOffset * perpDir;
-}
-
-// ============================================
-// FIND CLOSEST POINT ON CURVED FIBER
-// ============================================
-vec3 closestPointOnCurvedFiber(vec2 p, float halfLen, vec2 fiberDir, vec2 fiberOrigin, float bend, float kink) {
-  vec2 w = p - fiberOrigin;
-  float tGuess = dot(w, fiberDir);
-  tGuess = clamp(tGuess, -halfLen, halfLen);
-
-  float bestT = tGuess;
-  float bestDist = 1000.0;
-
-  // Coarse search
-  for (float i = 0.0; i <= 1.0; i += 0.02) {
-    float t = mix(-halfLen, halfLen, i);
-    vec2 pt = getCurvedFiberPoint(t, halfLen, fiberDir, fiberOrigin, bend, kink);
-    float d = length(p - pt);
-    if (d < bestDist) {
-      bestDist = d;
-      bestT = t;
-    }
-  }
-
-  // Fine search around best
-  float searchRadius = halfLen * 0.05;
-  for (float i = 0.0; i <= 1.0; i += 0.1) {
-    float t = bestT + mix(-searchRadius, searchRadius, i);
-    t = clamp(t, -halfLen, halfLen);
-    vec2 pt = getCurvedFiberPoint(t, halfLen, fiberDir, fiberOrigin, bend, kink);
-    float d = length(p - pt);
-    if (d < bestDist) {
-      bestDist = d;
-      bestT = t;
-    }
-  }
-
-  return vec3(bestDist, bestT, 0.0);
-}
-
-// ============================================
-// FIBER PROFILE
-// ============================================
-float fiberProfile(float r, float radius, float sharpness) {
-  float x = r / radius;
+float fiberProfile(float dist, float radius, float sharpness, float tNorm) {
+  // Taper toward tip
+  float taperRadius = radius * (1.0 - tNorm * 0.3);
+  float x = dist / taperRadius;
   float core = 1.0 - smoothstep(0.0, 1.0, pow(x, sharpness));
-  float glow = exp(-x * x * 4.0) * 0.15;
-  return core + glow;
+  return core;
+}
+
+// ============================================
+// RENDER SINGLE FIBER
+// ============================================
+vec4 renderFiber(vec2 uv, vec2 root, vec2 dir, float len, float radius,
+                 float sharpness, float bend, float seed, vec3 baseColor, vec3 lightDir) {
+
+  vec2 sdf = fiberSDF(uv, root, dir, len, bend, seed);
+  float dist = sdf.x;
+  float tNorm = sdf.y;
+
+  // Early out
+  if (dist > radius * 1.5) return vec4(0.0);
+
+  float profile = fiberProfile(dist, radius, sharpness, tNorm);
+  if (profile < 0.01) return vec4(0.0);
+
+  // Normal calculation
+  vec2 perpDir = vec2(-dir.y, dir.x);
+  float bendOffset = bend * len * tNorm * tNorm;
+  float wobble = noise1D(tNorm * 4.0 + seed) * len * 0.02;
+  vec2 fiberPt = root + tNorm * len * dir + (bendOffset + wobble) * perpDir;
+  vec2 toSurface = uv - fiberPt;
+
+  float taperRadius = radius * (1.0 - tNorm * 0.3);
+  vec2 normal2D = length(toSurface) > 0.0001 ? normalize(toSurface) : perpDir;
+  float normalizedR = clamp(dist / taperRadius, 0.0, 1.0);
+  float nz = sqrt(max(0.0, 1.0 - normalizedR * normalizedR));
+  vec3 normal = normalize(vec3(normal2D * normalizedR, nz));
+
+  // Lighting
+  float NdotL = max(dot(normal, lightDir), 0.0);
+
+  vec3 viewDir = vec3(0.0, 0.0, 1.0);
+  vec3 halfVec = normalize(lightDir + viewDir);
+  float NdotH = max(dot(normal, halfVec), 0.0);
+  float spec = pow(NdotH, u_glossiness) * u_specular;
+
+  // Anisotropic highlight along fiber
+  vec3 tangent = vec3(dir, 0.0);
+  float TdotH = dot(tangent, halfVec);
+  float aniso = sqrt(max(0.0, 1.0 - TdotH * TdotH));
+  float anisoSpec = pow(aniso, u_glossiness * 0.5) * u_specular * 0.4;
+
+  // Fresnel
+  float fresnel = pow(1.0 - nz, 3.0) * 0.15;
+
+  // Combine lighting
+  float ambient = 0.25;
+  vec3 color = baseColor * (ambient + NdotL * 0.6);
+  color += vec3(1.0) * (spec + anisoSpec);
+  color += baseColor * fresnel;
+
+  // Slight darkening at root (embedded in surface)
+  color *= 0.85 + 0.15 * tNorm;
+
+  return vec4(color, profile);
 }
 
 // ============================================
@@ -140,130 +147,82 @@ float fiberProfile(float r, float radius, float sharpness) {
 void main() {
   vec2 uv = (vUv - 0.5) * vec2(u_resolution.x / u_resolution.y, 1.0);
 
-  // Fiber direction from angle
-  float rad = u_angle * 3.14159 / 180.0;
-  vec2 fiberDir = normalize(vec2(cos(rad), sin(rad)));
-  vec2 perpDir = vec2(-fiberDir.y, fiberDir.x);
-  vec2 fiberOrigin = vec2(0.0, 0.0);
+  // Parameters
+  float scale = u_scale;
+  float radius = u_radius * scale;
+  float len = u_length * scale;
+  float cellSize = len * 0.4; // Density of fiber roots
+  float bend = u_bend;
+  float angleSpread = u_kink * 0.5; // Radians of random spread
 
-  float halfLen = u_length * 0.5;
+  // Base direction
+  float baseAngle = u_angle * PI / 180.0;
+  vec2 baseDir = vec2(cos(baseAngle), sin(baseAngle));
 
-  // Find closest point on curved fiber
-  vec3 closest = closestPointOnCurvedFiber(uv, halfLen, fiberDir, fiberOrigin, u_bend, u_kink);
-  float dist = closest.x;
-  float t = closest.y;
-
-  // Get the actual point on curve
-  vec2 curvePoint = getCurvedFiberPoint(t, halfLen, fiberDir, fiberOrigin, u_bend, u_kink);
-
-  // CAPSULE ENDPOINTS
-  vec2 endpointA = getCurvedFiberPoint(-halfLen, halfLen, fiberDir, fiberOrigin, u_bend, u_kink);
-  vec2 endpointB = getCurvedFiberPoint(halfLen, halfLen, fiberDir, fiberOrigin, u_bend, u_kink);
-
-  float distToA = length(uv - endpointA);
-  float distToB = length(uv - endpointB);
-
-  bool atEndA = t <= -halfLen * 0.95 && distToA < dist;
-  bool atEndB = t >= halfLen * 0.95 && distToB < dist;
-
-  if (atEndA) {
-    dist = distToA;
-    curvePoint = endpointA;
-    t = -halfLen;
-  } else if (atEndB) {
-    dist = distToB;
-    curvePoint = endpointB;
-    t = halfLen;
-  }
-
-  // Micro-curvature (fine detail on top of bend)
-  float tNorm = t / halfLen;
-  float curveOffset = noise1D(t * 15.0 + 42.0) * u_curve;
-  curveOffset += noise1D(t * 35.0 + 17.0) * u_curve * 0.3;
-  float curveMask = 1.0 - pow(abs(tNorm), 4.0);
-  dist = abs(dist - curveOffset * curveMask);
-
-  // Fiber profile
-  float profile = fiberProfile(dist, u_radius, u_sharpness);
-
-  // Surface texture
-  float texCoordU = t * 200.0;
-  float texCoordR = dist / u_radius * 50.0;
-  float surfaceTex = fbm(vec2(texCoordU, texCoordR * 0.5));
-  surfaceTex = mix(1.0, 0.7 + 0.3 * surfaceTex, u_texture * profile);
-
-  // Combined density
-  float density = profile * surfaceTex;
-
-  // ============================================
-  // COLOR + LIGHTING
-  // ============================================
-  vec3 fiberColor = vec3(0.95, 0.92, 0.85);
-  fiberColor *= 0.95 + 0.05 * noise1D(t * 8.0);
-
-  // === SURFACE NORMAL ===
-  vec2 toSurface = uv - curvePoint;
-
-  // Tangent of curve
-  float dt = 0.001;
-  vec2 curvePtNext = getCurvedFiberPoint(t + dt, halfLen, fiberDir, fiberOrigin, u_bend, u_kink);
-  vec2 curvePtPrev = getCurvedFiberPoint(t - dt, halfLen, fiberDir, fiberOrigin, u_bend, u_kink);
-  vec2 tangent2D = normalize(curvePtNext - curvePtPrev);
-
-  vec2 normal2D = normalize(toSurface);
-  float radialDist = length(toSurface);
-  float normalizedR = clamp(radialDist / u_radius, 0.0, 1.0);
-  float nz = sqrt(1.0 - normalizedR * normalizedR);
-  vec3 normal = normalize(vec3(normal2D * normalizedR, nz));
-
-  // === LIGHT DIRECTION ===
-  float lightRad = u_lightAngle * 3.14159 / 180.0;
+  // Light
+  float lightRad = u_lightAngle * PI / 180.0;
   vec3 lightDir = normalize(vec3(
     cos(lightRad) * (1.0 - u_lightHeight),
     sin(lightRad) * (1.0 - u_lightHeight),
     u_lightHeight
   ));
 
-  // === DIFFUSE ===
-  float NdotL = max(dot(normal, lightDir), 0.0);
-  float diffuse = NdotL;
+  // Fiber color
+  vec3 fiberColor = vec3(0.95, 0.92, 0.85);
 
-  // === SPECULAR ===
-  vec3 viewDir = vec3(0.0, 0.0, 1.0);
-  vec3 halfVec = normalize(lightDir + viewDir);
-  float NdotH = max(dot(normal, halfVec), 0.0);
-  float spec = pow(NdotH, u_glossiness) * u_specular;
+  // Background (the "scalp")
+  vec3 bgColor = vec3(0.12, 0.10, 0.08);
 
-  // === ANISOTROPIC HIGHLIGHT ===
-  vec3 tangent = vec3(tangent2D, 0.0);
-  float TdotH = dot(tangent, halfVec);
-  float aniso = sqrt(1.0 - TdotH * TdotH);
-  float anisoSpec = pow(aniso, u_glossiness * 0.5) * u_specular * 0.5;
+  // Find current cell
+  vec2 cellId = floor(uv / cellSize);
 
-  // === FRESNEL ===
-  float fresnel = pow(1.0 - nz, 3.0) * 0.3;
+  vec3 finalColor = bgColor;
+  float maxDensity = 0.0;
 
-  // === COMBINE LIGHTING ===
-  float ambient = 0.25;
-  vec3 litColor = fiberColor * (ambient + diffuse * 0.7);
-  litColor += vec3(1.0) * (spec + anisoSpec);
-  litColor += fiberColor * fresnel;
+  // Check 5x5 neighborhood (fibers can extend into neighboring cells)
+  for (float dy = -2.0; dy <= 2.0; dy += 1.0) {
+    for (float dx = -2.0; dx <= 2.0; dx += 1.0) {
+      vec2 neighborCell = cellId + vec2(dx, dy);
+      vec2 randVal = hash2(neighborCell);
 
-  // === SUBSURFACE ===
-  float wrap = max(dot(normal, lightDir) + 0.3, 0.0) / 1.3;
-  vec3 subsurface = fiberColor * vec3(1.0, 0.95, 0.9) * wrap * 0.15;
-  litColor += subsurface * profile;
+      // Root position: random within cell
+      vec2 root = (neighborCell + randVal) * cellSize;
 
-  // Background
-  vec3 bgColor = vec3(0.08, 0.08, 0.1);
+      // Random angle variation
+      float angleVar = (randVal.x - 0.5) * 2.0 * angleSpread;
+      float fiberAngle = baseAngle + angleVar;
+      vec2 dir = vec2(cos(fiberAngle), sin(fiberAngle));
 
-  // Final composite
-  vec3 color = mix(bgColor, litColor, density);
+      // Random bend variation
+      float fiberBend = bend * (0.5 + randVal.y);
 
-  // Vignette
-  float vignette = 1.0 - length(vUv - 0.5) * 0.5;
-  color *= vignette;
+      // Seed for this fiber's noise
+      float seed = randVal.x * 100.0 + randVal.y * 37.0;
 
-  gl_FragColor = vec4(color, u_opacity);
+      // Slight length variation
+      float fiberLen = len * (0.8 + randVal.y * 0.4);
+
+      // Render fiber
+      vec4 fiber = renderFiber(uv, root, dir, fiberLen, radius,
+                                u_sharpness, fiberBend, seed, fiberColor, lightDir);
+
+      if (fiber.a > 0.01) {
+        // Simple depth: fibers further from camera (lower y of root) are behind
+        float depthFactor = 1.0 - (neighborCell.y * 0.02 + randVal.y * 0.1);
+        depthFactor = clamp(depthFactor, 0.7, 1.0);
+
+        // Blend
+        float blend = fiber.a * (1.0 - maxDensity * 0.3);
+        finalColor = mix(finalColor, fiber.rgb * depthFactor, blend);
+        maxDensity = max(maxDensity, fiber.a);
+      }
+    }
+  }
+
+  // Subtle vignette
+  float vignette = 1.0 - length(vUv - 0.5) * 0.3;
+  finalColor *= vignette;
+
+  gl_FragColor = vec4(finalColor, u_opacity);
 }
 `;
