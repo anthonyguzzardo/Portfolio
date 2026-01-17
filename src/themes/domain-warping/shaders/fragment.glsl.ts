@@ -1,5 +1,6 @@
 // Domain Warping Fragment Shader
 // Full glossy effect with 3-layer cascading domain warp
+// Supports multiple color themes via u_colorTheme uniform
 
 import { simplex2D } from '../../_shared/noise.glsl';
 
@@ -9,6 +10,7 @@ precision highp float;
 uniform float u_time;
 uniform vec2 u_resolution;
 uniform float u_opacity;
+uniform float u_colorTheme;
 varying vec2 vUv;
 
 ${simplex2D}
@@ -20,22 +22,114 @@ const vec2 OFF3 = vec2(8.3, 2.8);
 const vec2 OFF4 = vec2(4.1, 3.7);
 const vec2 OFF5 = vec2(2.9, 7.1);
 
-// === COLOR PALETTE (no blacks - deep colors as anchors) ===
-// Darks (anchors) - rich, not black
-const vec3 deepGreen = vec3(0.12, 0.22, 0.12);   // #1f391e
-const vec3 deepTeal = vec3(0.08, 0.29, 0.22);    // #154a38
-const vec3 darkBrown = vec3(0.27, 0.12, 0.11);   // #461f1d
-const vec3 darkWine = vec3(0.42, 0.19, 0.22);    // #6b3038
+// === COLOR PALETTES ===
 
-// Saturated mids (the color)
-const vec3 magenta = vec3(0.75, 0.28, 0.61);     // #bf479b
-const vec3 burgundy = vec3(0.59, 0.18, 0.32);    // #972f52
-const vec3 royalBlue = vec3(0.18, 0.27, 0.62);   // #2d449d
-const vec3 purple = vec3(0.49, 0.35, 0.69);      // #7c59b0
+// Theme 0: NEON (magenta/purple/pink)
+const vec3 neon_base = vec3(0.12, 0.08, 0.18);
+const vec3 neon_deep = vec3(0.18, 0.08, 0.22);
+const vec3 neon_mid1 = vec3(0.75, 0.28, 0.61);
+const vec3 neon_mid2 = vec3(0.49, 0.35, 0.69);
+const vec3 neon_mid3 = vec3(0.59, 0.18, 0.52);
+const vec3 neon_accent = vec3(0.18, 0.27, 0.62);
+const vec3 neon_highlight = vec3(0.79, 0.46, 0.61);
+const vec3 neon_peak = vec3(0.89, 0.67, 0.90);
 
-// Luminous (highlights)
-const vec3 pink = vec3(0.79, 0.46, 0.61);        // #c9769b
-const vec3 lavender = vec3(0.79, 0.57, 0.80);    // #c991cc
+// Theme 1: OCEAN (deep blues/teals/cyans)
+const vec3 ocean_base = vec3(0.02, 0.08, 0.15);
+const vec3 ocean_deep = vec3(0.04, 0.12, 0.22);
+const vec3 ocean_mid1 = vec3(0.08, 0.35, 0.55);
+const vec3 ocean_mid2 = vec3(0.12, 0.45, 0.65);
+const vec3 ocean_mid3 = vec3(0.05, 0.25, 0.45);
+const vec3 ocean_accent = vec3(0.15, 0.55, 0.65);
+const vec3 ocean_highlight = vec3(0.35, 0.75, 0.85);
+const vec3 ocean_peak = vec3(0.65, 0.92, 0.98);
+
+// Theme 2: EMBER (reds/oranges/yellows)
+const vec3 ember_base = vec3(0.12, 0.04, 0.02);
+const vec3 ember_deep = vec3(0.22, 0.06, 0.02);
+const vec3 ember_mid1 = vec3(0.85, 0.25, 0.08);
+const vec3 ember_mid2 = vec3(0.95, 0.45, 0.12);
+const vec3 ember_mid3 = vec3(0.65, 0.12, 0.08);
+const vec3 ember_accent = vec3(0.75, 0.35, 0.05);
+const vec3 ember_highlight = vec3(0.98, 0.65, 0.15);
+const vec3 ember_peak = vec3(1.0, 0.85, 0.45);
+
+// Theme 3: AURORA (greens/teals/purples)
+const vec3 aurora_base = vec3(0.02, 0.08, 0.12);
+const vec3 aurora_deep = vec3(0.04, 0.15, 0.18);
+const vec3 aurora_mid1 = vec3(0.15, 0.65, 0.45);
+const vec3 aurora_mid2 = vec3(0.25, 0.75, 0.55);
+const vec3 aurora_mid3 = vec3(0.35, 0.45, 0.65);
+const vec3 aurora_accent = vec3(0.55, 0.35, 0.75);
+const vec3 aurora_highlight = vec3(0.45, 0.85, 0.65);
+const vec3 aurora_peak = vec3(0.75, 0.95, 0.85);
+
+// Theme 4: VOID (deep blacks/purples/blues)
+const vec3 void_base = vec3(0.02, 0.02, 0.04);
+const vec3 void_deep = vec3(0.05, 0.03, 0.08);
+const vec3 void_mid1 = vec3(0.15, 0.08, 0.25);
+const vec3 void_mid2 = vec3(0.22, 0.12, 0.35);
+const vec3 void_mid3 = vec3(0.08, 0.05, 0.18);
+const vec3 void_accent = vec3(0.12, 0.15, 0.35);
+const vec3 void_highlight = vec3(0.35, 0.25, 0.55);
+const vec3 void_peak = vec3(0.55, 0.45, 0.75);
+
+// === PALETTE INTERPOLATION ===
+vec3 getBase(float theme) {
+  if (theme < 1.0) return mix(neon_base, ocean_base, theme);
+  if (theme < 2.0) return mix(ocean_base, ember_base, theme - 1.0);
+  if (theme < 3.0) return mix(ember_base, aurora_base, theme - 2.0);
+  return mix(aurora_base, void_base, theme - 3.0);
+}
+
+vec3 getDeep(float theme) {
+  if (theme < 1.0) return mix(neon_deep, ocean_deep, theme);
+  if (theme < 2.0) return mix(ocean_deep, ember_deep, theme - 1.0);
+  if (theme < 3.0) return mix(ember_deep, aurora_deep, theme - 2.0);
+  return mix(aurora_deep, void_deep, theme - 3.0);
+}
+
+vec3 getMid1(float theme) {
+  if (theme < 1.0) return mix(neon_mid1, ocean_mid1, theme);
+  if (theme < 2.0) return mix(ocean_mid1, ember_mid1, theme - 1.0);
+  if (theme < 3.0) return mix(ember_mid1, aurora_mid1, theme - 2.0);
+  return mix(aurora_mid1, void_mid1, theme - 3.0);
+}
+
+vec3 getMid2(float theme) {
+  if (theme < 1.0) return mix(neon_mid2, ocean_mid2, theme);
+  if (theme < 2.0) return mix(ocean_mid2, ember_mid2, theme - 1.0);
+  if (theme < 3.0) return mix(ember_mid2, aurora_mid2, theme - 2.0);
+  return mix(aurora_mid2, void_mid2, theme - 3.0);
+}
+
+vec3 getMid3(float theme) {
+  if (theme < 1.0) return mix(neon_mid3, ocean_mid3, theme);
+  if (theme < 2.0) return mix(ocean_mid3, ember_mid3, theme - 1.0);
+  if (theme < 3.0) return mix(ember_mid3, aurora_mid3, theme - 2.0);
+  return mix(aurora_mid3, void_mid3, theme - 3.0);
+}
+
+vec3 getAccent(float theme) {
+  if (theme < 1.0) return mix(neon_accent, ocean_accent, theme);
+  if (theme < 2.0) return mix(ocean_accent, ember_accent, theme - 1.0);
+  if (theme < 3.0) return mix(ember_accent, aurora_accent, theme - 2.0);
+  return mix(aurora_accent, void_accent, theme - 3.0);
+}
+
+vec3 getHighlight(float theme) {
+  if (theme < 1.0) return mix(neon_highlight, ocean_highlight, theme);
+  if (theme < 2.0) return mix(ocean_highlight, ember_highlight, theme - 1.0);
+  if (theme < 3.0) return mix(ember_highlight, aurora_highlight, theme - 2.0);
+  return mix(aurora_highlight, void_highlight, theme - 3.0);
+}
+
+vec3 getPeak(float theme) {
+  if (theme < 1.0) return mix(neon_peak, ocean_peak, theme);
+  if (theme < 2.0) return mix(ocean_peak, ember_peak, theme - 1.0);
+  if (theme < 3.0) return mix(ember_peak, aurora_peak, theme - 2.0);
+  return mix(aurora_peak, void_peak, theme - 3.0);
+}
 
 // === PRIME-RATIO DRIFT (avoids visible repetition) ===
 vec2 getDrift(float t) {
@@ -65,17 +159,22 @@ vec2 domainWarp(vec2 p, float t) {
   return p + w1 + w2 + w3;
 }
 
-// === MULTI-ACCENT COLOR MIXING ===
-vec3 accentMix(vec3 c1, vec3 c2, vec3 c3, float n) {
-  float t = n * 0.5 + 0.5; // Normalize to 0-1
-  return mix(c1, mix(c2, c3, t), t * 0.7);
-}
-
 void main() {
   // Aspect-corrected coordinates centered at origin
   vec2 aspect = vec2(u_resolution.x / u_resolution.y, 1.0);
   vec2 p = (vUv - 0.5) * aspect;
   float t = u_time * 0.25;
+
+  // Get current palette colors
+  float theme = clamp(u_colorTheme, 0.0, 4.0);
+  vec3 baseColor = getBase(theme);
+  vec3 deepColor = getDeep(theme);
+  vec3 mid1 = getMid1(theme);
+  vec3 mid2 = getMid2(theme);
+  vec3 mid3 = getMid3(theme);
+  vec3 accent = getAccent(theme);
+  vec3 highlight = getHighlight(theme);
+  vec3 peak = getPeak(theme);
 
   // === 1. DOMAIN WARP (3-layer cascade) ===
   vec2 warpedPos = domainWarp(p, t);
@@ -85,7 +184,6 @@ void main() {
   float baseIntensity = smoothstep(1.3, 0.1, dist);
 
   // === 3. LARGE COLOR REGIONS FROM WARPED COORDS ===
-  // Low frequencies = big expansive areas for each color
   float n1 = snoise(warpedPos * 0.7);
   float n2 = snoise(warpedPos * 0.9 + OFF1);
   float n3 = snoise(warpedPos * 0.6 + OFF2);
@@ -99,61 +197,41 @@ void main() {
   float caustics = smoothstep(0.4, 0.75, causticNoise) * intensity;
 
   // === 6. BUILD COLOR WITH WIDE REGIONS ===
-  // Each color gets a big chunk of the noise range
+  float zone1 = smoothstep(-0.1, 0.3, n1);
+  float zone2 = smoothstep(0.2, -0.2, n1) * smoothstep(-0.2, 0.2, n2);
+  float zone3 = smoothstep(-0.1, 0.4, n3) * smoothstep(0.3, -0.1, n1);
+  float zone4 = smoothstep(0.0, -0.4, n1);
+  float zone5 = smoothstep(0.1, -0.3, n2) * smoothstep(0.0, -0.3, n3);
 
-  // Magenta dominates the positive range
-  float magentaZone = smoothstep(-0.1, 0.3, n1);
-
-  // Purple takes over in negative n1, positive n2
-  float purpleZone = smoothstep(0.2, -0.2, n1) * smoothstep(-0.2, 0.2, n2);
-
-  // Royal blue in its own region
-  float blueZone = smoothstep(-0.1, 0.4, n3) * smoothstep(0.3, -0.1, n1);
-
-  // Burgundy fills the deep negatives
-  float burgundyZone = smoothstep(0.0, -0.4, n1);
-
-  // Deep teal as grounding anchor
-  float tealZone = smoothstep(0.1, -0.3, n2) * smoothstep(0.0, -0.3, n3);
-
-  // Build color - start with deep green base
-  vec3 color = deepGreen;
+  // Build color - start with base
+  vec3 color = baseColor;
 
   // Layer colors with wide, breathing regions
-  color = mix(color, deepTeal, tealZone * 0.9);
-  color = mix(color, burgundy, burgundyZone * intensity);
-  color = mix(color, royalBlue, blueZone * intensity * 0.9);
-  color = mix(color, purple, purpleZone * intensity);
-  color = mix(color, magenta, magentaZone * intensity);
+  color = mix(color, deepColor, zone5 * 0.9);
+  color = mix(color, mid3, zone4 * intensity);
+  color = mix(color, accent, zone3 * intensity * 0.9);
+  color = mix(color, mid2, zone2 * intensity);
+  color = mix(color, mid1, zone1 * intensity);
 
-  // Dark wine only in fold intersections
+  // Dark accent in fold intersections
   float foldDark = smoothstep(0.3, 0.6, n1 * n2);
-  color = mix(color, darkWine, foldDark * 0.35);
+  color = mix(color, deepColor, foldDark * 0.35);
 
   // === 7. SHARP HIGHLIGHTS (not diffuse glow) ===
-  // Pink highlights on caustic peaks
-  color = mix(color, pink, caustics * 0.7);
+  color = mix(color, highlight, caustics * 0.7);
 
-  // Lavender only on the sharpest peaks
+  // Peak highlights on the sharpest peaks
   float sharpPeak = smoothstep(0.55, 0.8, causticNoise) * intensity;
-  color = mix(color, lavender, sharpPeak * 0.5);
+  color = mix(color, peak, sharpPeak * 0.5);
 
   // === BOOST SATURATION ===
   float lum = dot(color, vec3(0.299, 0.587, 0.114));
-  color = mix(vec3(lum), color, 1.25); // Push saturation up
-
-  // === VIGNETTE (to deep color, not darkness) ===
-  float vignette = smoothstep(1.4, 0.4, dist);
-  color = mix(deepGreen, color, vignette);
+  color = mix(vec3(lum), color, 1.25);
 
   // === MINIMAL GRAIN ===
   float grain = fract(sin(dot(vUv * u_resolution + u_time * 100.0, vec2(12.9898, 78.233))) * 43758.5453);
   color += (grain - 0.5) * 0.015;
 
-  // === EDGE FADE ===
-  float edgeFade = smoothstep(0.0, 0.06, vUv.y) * smoothstep(1.0, 0.94, vUv.y);
-  edgeFade *= smoothstep(0.0, 0.06, vUv.x) * smoothstep(1.0, 0.94, vUv.x);
-
-  gl_FragColor = vec4(color, edgeFade * u_opacity);
+  gl_FragColor = vec4(color, u_opacity);
 }
 `;

@@ -111,6 +111,25 @@ h3 {
 	right: 0;
 }
 
+/* Fade mask - content vaporizes as it scrolls under nav */
+.nav.nav-transparent::before {
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 120px;
+	background: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 1) 0%,
+		rgba(0, 0, 0, 0.85) 40%,
+		rgba(0, 0, 0, 0.4) 70%,
+		transparent 100%
+	);
+	pointer-events: none;
+	z-index: -1;
+}
+
 .nav.nav-transparent.menu-open {
 	background: var(--bg-primary);
 	border-bottom: 1px solid var(--border-color);
@@ -237,6 +256,35 @@ h3 {
 	padding: 0.375rem 0.75rem;
 }
 
+/* Brighten nav text for liquid glass visibility */
+.nav-glass-pill .nav-name {
+	color: #fff;
+}
+
+.nav-glass-pill .nav-location {
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.nav-glass-pill .nav-right a,
+.nav-glass-pill .nav-left > a:not(.nav-logo) {
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.nav-glass-pill .nav-right a:hover,
+.nav-glass-pill .nav-left > a:not(.nav-logo):hover {
+	color: #fff;
+}
+
+.nav-glass-pill .theme-dropdown-btn,
+.nav-glass-pill .copy-email-btn {
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.nav-glass-pill .theme-dropdown-btn:hover,
+.nav-glass-pill .copy-email-btn:hover {
+	color: #fff;
+}
+
 /* Override light theme individual styles when inside glass pill */
 [data-theme="light"] .nav-glass-pill .nav-logo,
 [data-theme="light"] .nav-glass-pill .nav-logo:hover,
@@ -289,7 +337,7 @@ h3 {
 	font-weight: 600;
 	font-size: 1.2rem;
 	display: flex;
-	align-items: center;
+	align-items: baseline;
 	/* Base state for smooth theme transitions */
 	background: transparent;
 	padding: 0.5rem 1rem;
@@ -306,10 +354,16 @@ h3 {
 }
 
 .nav-location {
-	font-size: 0.8rem;
-	color: var(--text-muted);
-	font-weight: 400;
+	font-size: 0.65rem;
+	color: rgba(255, 255, 255, 0.6);
+	font-weight: 600;
 	margin-left: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	padding: 0.2rem 0.5rem;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .logo-img {
@@ -1427,6 +1481,7 @@ footer {
 .page-content {
 	min-height: 60vh;
 	padding: 4rem 0;
+	padding-top: 120px; /* Account for fixed navbar */
 }
 
 .page-content h1 {

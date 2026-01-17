@@ -35,6 +35,27 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
   </div>
 </div>
 
+<!-- Domain Warping Color Theme Slider -->
+<div id="warp-theme-container" class="warp-theme-container hidden">
+  <div class="liquid-glass-pill warp-theme-pill">
+    <div class="warp-theme-labels">
+      <span class="warp-label" data-value="0">Neon</span>
+      <span class="warp-label" data-value="1">Ocean</span>
+      <span class="warp-label" data-value="2">Ember</span>
+      <span class="warp-label" data-value="3">Aurora</span>
+      <span class="warp-label" data-value="4">Void</span>
+    </div>
+    <input
+      type="range"
+      id="warp-theme-slider"
+      min="0"
+      max="4"
+      value="0"
+      step="0.01"
+    />
+  </div>
+</div>
+
 <!-- Fibers Theme GUI Panel -->
 <div id="fibers-gui-container" class="fibers-gui-container hidden">
   <div class="fibers-gui-panel">
@@ -216,6 +237,85 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
     min-width: 32px;
     text-align: right;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Domain Warping Theme Slider */
+  .warp-theme-container {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    pointer-events: auto;
+  }
+
+  .warp-theme-container.hidden {
+    display: none;
+  }
+
+  .warp-theme-pill {
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 24px;
+    border-radius: 16px;
+  }
+
+  .warp-theme-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 4px;
+  }
+
+  .warp-label {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: color 0.2s ease, transform 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .warp-label:hover {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .warp-label.active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .warp-theme-pill input[type="range"] {
+    width: 280px;
+    height: 6px;
+    background: linear-gradient(
+      90deg,
+      #bf479b 0%,
+      #0891b2 25%,
+      #f97316 50%,
+      #10b981 75%,
+      #6366f1 100%
+    );
+    border-radius: 3px;
+  }
+
+  .warp-theme-pill input[type="range"]::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border: 3px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  }
+
+  .warp-theme-pill input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border: 3px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
   }
 
   /* Fibers GUI Panel */
@@ -464,25 +564,44 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
       // Check if theme supports mouse tracking (u_mouse uniform)
       this.hasMouseTracking = !!(theme.shaders.uniforms && 'u_mouse' in theme.shaders.uniforms);
 
-      // Show/hide tile slider based on theme
+      // Only show GUI controls on the index page
+      const isIndexPage = window.location.pathname === '/';
+
+      // Show/hide tile slider based on theme (only on index)
       const sliderContainer = document.getElementById('tile-slider-container');
       if (sliderContainer) {
-        if (theme.shaders.uniforms && 'u_tileSize' in theme.shaders.uniforms) {
+        if (isIndexPage && theme.shaders.uniforms && 'u_tileSize' in theme.shaders.uniforms) {
           sliderContainer.classList.remove('hidden');
         } else {
           sliderContainer.classList.add('hidden');
         }
       }
 
-      // Show/hide fibers GUI based on theme
+      // Show/hide fibers GUI based on theme (only on index)
       const fibersGuiContainer = document.getElementById('fibers-gui-container');
       if (fibersGuiContainer) {
-        if (theme.shaders.uniforms && 'u_radius' in theme.shaders.uniforms) {
+        if (isIndexPage && theme.shaders.uniforms && 'u_radius' in theme.shaders.uniforms) {
           fibersGuiContainer.classList.remove('hidden');
           // Sync slider values with theme defaults
           this.syncFibersGuiValues(theme);
         } else {
           fibersGuiContainer.classList.add('hidden');
+        }
+      }
+
+      // Show/hide domain warping theme slider (only on index)
+      const warpThemeContainer = document.getElementById('warp-theme-container');
+      if (warpThemeContainer) {
+        if (isIndexPage && theme.shaders.uniforms && 'u_colorTheme' in theme.shaders.uniforms) {
+          warpThemeContainer.classList.remove('hidden');
+          // Reset slider and update active label
+          const slider = document.getElementById('warp-theme-slider') as HTMLInputElement;
+          if (slider) {
+            slider.value = String(theme.shaders.uniforms.u_colorTheme.value);
+            this.updateWarpThemeLabels(parseFloat(slider.value));
+          }
+        } else {
+          warpThemeContainer.classList.add('hidden');
         }
       }
 
@@ -700,6 +819,51 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
       }
     };
 
+    private updateWarpThemeLabels(value: number): void {
+      const labels = document.querySelectorAll('.warp-label');
+      labels.forEach((label) => {
+        const labelValue = parseFloat((label as HTMLElement).dataset.value || '0');
+        // Active if within 0.5 of the label value
+        if (Math.abs(value - labelValue) < 0.5) {
+          label.classList.add('active');
+        } else {
+          label.classList.remove('active');
+        }
+      });
+    }
+
+    private onWarpThemeChange = (e: Event): void => {
+      const slider = e.target as HTMLInputElement;
+      const value = parseFloat(slider.value);
+
+      // Update uniform
+      if (this.material && this.material.uniforms.u_colorTheme) {
+        this.material.uniforms.u_colorTheme.value = value;
+      }
+
+      // Update active label
+      this.updateWarpThemeLabels(value);
+    };
+
+    private onWarpLabelClick = (e: Event): void => {
+      const label = e.target as HTMLElement;
+      const value = parseFloat(label.dataset.value || '0');
+
+      // Update slider
+      const slider = document.getElementById('warp-theme-slider') as HTMLInputElement;
+      if (slider) {
+        slider.value = String(value);
+      }
+
+      // Update uniform
+      if (this.material && this.material.uniforms.u_colorTheme) {
+        this.material.uniforms.u_colorTheme.value = value;
+      }
+
+      // Update active label
+      this.updateWarpThemeLabels(value);
+    };
+
     private setupEventListeners(): void {
       window.addEventListener('resize', this.onResize);
       window.addEventListener('theme:change', this.onThemeChange as EventListener);
@@ -734,6 +898,18 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
       if (fibersResetBtn) {
         fibersResetBtn.addEventListener('click', this.onFibersReset);
       }
+
+      // Warp theme slider
+      const warpThemeSlider = document.getElementById('warp-theme-slider');
+      if (warpThemeSlider) {
+        warpThemeSlider.addEventListener('input', this.onWarpThemeChange);
+      }
+
+      // Warp theme label clicks
+      const warpLabels = document.querySelectorAll('.warp-label');
+      warpLabels.forEach((label) => {
+        label.addEventListener('click', this.onWarpLabelClick);
+      });
 
       // Cleanup on page navigation (Astro)
       document.addEventListener('astro:before-swap', this.dispose);
@@ -782,6 +958,18 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
       if (fibersResetBtn) {
         fibersResetBtn.removeEventListener('click', this.onFibersReset);
       }
+
+      // Clean up warp theme slider
+      const warpThemeSlider = document.getElementById('warp-theme-slider');
+      if (warpThemeSlider) {
+        warpThemeSlider.removeEventListener('input', this.onWarpThemeChange);
+      }
+
+      // Clean up warp theme labels
+      const warpLabels = document.querySelectorAll('.warp-label');
+      warpLabels.forEach((label) => {
+        label.removeEventListener('click', this.onWarpLabelClick);
+      });
     };
   }
 

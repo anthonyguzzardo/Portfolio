@@ -13,8 +13,9 @@ export const domainWarpingTheme: Theme = {
     fragment: fragmentShader,
     uniforms: {
       u_time: { value: 0, type: 'float' },
-      u_resolution: { value: [1920, 1080], type: 'vec2' }, // Set at runtime by ThemeBackground
+      u_resolution: { value: [1920, 1080], type: 'vec2' },
       u_opacity: { value: 1.0, type: 'float' },
+      u_colorTheme: { value: 0, type: 'float' }, // 0=Neon, 1=Ocean, 2=Ember, 3=Aurora, 4=Void
     },
   },
 };
