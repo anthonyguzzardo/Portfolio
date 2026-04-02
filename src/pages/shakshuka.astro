@@ -163,6 +163,14 @@ const iconPaths = [
       <h2 class="sk-section-title sk-anim">Field Guide</h2>
       <p class="sk-section-sub sk-anim">Flip through the life list — {fieldGuide.length} species catalogued &nbsp;<a href="/field-guide" class="sk-view-all">View All</a></p>
 
+      <div class="sk-dex-search-wrap sk-anim">
+        <div class="sk-dex-search-box">
+          <svg class="sk-dex-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="sk-dex-search" id="dex-search" placeholder="Search species..." autocomplete="off" />
+          <div class="sk-dex-suggestions" id="dex-suggestions"></div>
+        </div>
+      </div>
+
       <div class="sk-dex-shelf sk-anim">
         <button class="sk-dex-arrow sk-dex-arrow-left" id="dex-left" aria-label="Scroll left">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -464,6 +472,43 @@ const iconPaths = [
     border-bottom: 1px solid transparent; transition: border-color 0.2s, color 0.2s;
   }
   .sk-view-all:hover { color: #7DB356; border-color: #7DB356; }
+
+  .sk-dex-search-wrap { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+  .sk-dex-search-box { position: relative; width: 100%; max-width: 360px; }
+  .sk-dex-search-icon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: #5B8C3E; pointer-events: none;
+  }
+  .sk-dex-search {
+    width: 100%; padding: 0.6rem 0.75rem 0.6rem 2.25rem;
+    background: #1a1f1c; border: 1px solid #2a302c; border-radius: 8px;
+    color: #e8e4dc; font-family: 'Inter', sans-serif; font-size: 0.85rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .sk-dex-search::placeholder { color: #555; }
+  .sk-dex-search:focus { border-color: #5B8C3E; }
+  .sk-dex-suggestions {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: #1a1f1c; border: 1px solid #2a302c; border-radius: 8px;
+    max-height: 240px; overflow-y: auto; z-index: 50;
+  }
+  .sk-dex-suggestions.open { display: block; }
+  .sk-dex-sug-item {
+    padding: 0.5rem 0.75rem; font-size: 0.8rem; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    transition: background 0.15s;
+  }
+  .sk-dex-sug-item:hover, .sk-dex-sug-item.active { background: rgba(91,140,62,0.12); }
+  .sk-dex-sug-item + .sk-dex-sug-item { border-top: 1px solid #222; }
+  .sk-dex-sug-name { color: #e8e4dc; }
+  .sk-dex-sug-sci { color: #7DB356; font-style: italic; font-size: 0.7rem; }
+  .sk-dex-sug-tag {
+    font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 0.1rem 0.4rem; border-radius: 100px; flex-shrink: 0; margin-left: 0.5rem;
+  }
+  .sk-dex-sug-tag.spotted { color: #5B8C3E; background: rgba(91,140,62,0.15); }
+  .sk-dex-sug-tag.unspotted { color: #555; background: rgba(255,255,255,0.05); }
+
   .sk-dex-shelf {
     display: flex; align-items: center; justify-content: center; gap: 0.75rem;
     position: relative;
@@ -498,7 +543,10 @@ const iconPaths = [
     border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column;
     border: 2px solid #2a302c; overflow: hidden;
   }
-  .sk-dex-back { transform: rotateY(180deg); }
+  .sk-dex-front { transition: visibility 0s 0.3s; }
+  .sk-dex-card.flipped .sk-dex-front { visibility: hidden; }
+  .sk-dex-back { transform: rotateY(180deg); visibility: hidden; transition: visibility 0s 0.3s; }
+  .sk-dex-card.flipped .sk-dex-back { visibility: visible; }
 
   /* Rarity card tints */
   .sk-dex-card[data-rarity="common"] .sk-dex-front,
@@ -813,6 +861,88 @@ const iconPaths = [
     document.querySelectorAll('.sk-dex-card').forEach(card => {
       card.addEventListener('click', () => card.classList.toggle('flipped'));
     });
+
+    // Bird species database for autocomplete
+    const knownBirds = [
+      'American Robin','American Goldfinch','American Crow','American Kestrel','American Woodcock','American Bittern','American Coot','American White Pelican','American Wigeon','American Redstart',
+      'Bald Eagle','Baltimore Oriole','Barn Owl','Barn Swallow','Barred Owl','Belted Kingfisher','Black-capped Chickadee','Blue Jay','Blue-winged Teal','Bobolink','Brown Thrasher','Brown Creeper','Brown-headed Cowbird','Broad-winged Hawk','Bufflehead',
+      'Canada Goose','Carolina Wren','Cedar Waxwing','Chimney Swift','Chipping Sparrow','Clay-colored Sparrow','Common Loon','Common Grackle','Common Merganser','Common Nighthawk','Common Yellowthroat','Cooper\'s Hawk',
+      'Dark-eyed Junco','Double-crested Cormorant','Downy Woodpecker','Dunlin',
+      'Eastern Bluebird','Eastern Kingbird','Eastern Meadowlark','Eastern Phoebe','Eastern Screech-Owl','Eastern Towhee','Eastern Wood-Pewee','European Starling',
+      'Fox Sparrow','Field Sparrow',
+      'Golden-crowned Kinglet','Gray Catbird','Great Blue Heron','Great Horned Owl','Great Egret','Greater Yellowlegs','Green Heron','Green-winged Teal',
+      'Hairy Woodpecker','Hermit Thrush','Herring Gull','Hooded Merganser','Hooded Warbler','House Finch','House Sparrow','House Wren',
+      'Indigo Bunting',
+      'Killdeer','King Rail',
+      'Least Sandpiper','Least Flycatcher','Lesser Yellowlegs','Lincoln\'s Sparrow','Loggerhead Shrike','Long-eared Owl',
+      'Magnolia Warbler','Mallard','Marsh Wren','Merlin','Mourning Dove','Mourning Warbler',
+      'Nashville Warbler','Northern Cardinal','Northern Flicker','Northern Harrier','Northern Mockingbird','Northern Pintail','Northern Rough-winged Swallow','Northern Saw-whet Owl','Northern Shoveler',
+      'Olive-sided Flycatcher','Orange-crowned Warbler','Orchard Oriole','Osprey','Ovenbird',
+      'Palm Warbler','Peregrine Falcon','Philadelphia Vireo','Pied-billed Grebe','Pileated Woodpecker','Pine Siskin','Pine Warbler','Prothonotary Warbler','Purple Finch','Purple Martin',
+      'Red-bellied Woodpecker','Red-breasted Nuthatch','Red-eyed Vireo','Red-headed Woodpecker','Red-shouldered Hawk','Red-tailed Hawk','Red-winged Blackbird','Ring-billed Gull','Ring-necked Duck','Ring-necked Pheasant','Rose-breasted Grosbeak','Ruby-crowned Kinglet','Ruby-throated Hummingbird','Ruddy Duck','Ruffed Grouse','Rusty Blackbird',
+      'Sandhill Crane','Savannah Sparrow','Scarlet Tanager','Sedge Wren','Sharp-shinned Hawk','Short-eared Owl','Snowy Owl','Solitary Sandpiper','Song Sparrow','Spotted Sandpiper','Swainson\'s Thrush','Swamp Sparrow',
+      'Tennessee Warbler','Tree Swallow','Trumpeter Swan','Tufted Titmouse','Turkey Vulture',
+      'Veery','Virginia Rail',
+      'Warbling Vireo','White-breasted Nuthatch','White-crowned Sparrow','White-throated Sparrow','Wild Turkey','Willow Flycatcher','Wilson\'s Warbler','Winter Wren','Wood Duck','Wood Thrush',
+      'Yellow Warbler','Yellow-bellied Sapsucker','Yellow-billed Cuckoo','Yellow-rumped Warbler','Yellow-throated Vireo',
+    ];
+    const guideNames = Array.from(dexCards).map(c => c.querySelector('.sk-dex-name')?.textContent || '');
+    const guideScientific = Array.from(document.querySelectorAll('#field-guide .sk-dex-scientific')).map(el => el.textContent || '');
+    const spottedSet = new Set(guideNames.map(n => n.toLowerCase()));
+    const allBirds = [...new Set([...guideNames, ...knownBirds])].sort();
+
+    const dexSearch = document.getElementById('dex-search');
+    const dexSuggestions = document.getElementById('dex-suggestions');
+    let sugIdx = -1;
+
+    function scoreBird(name, query) {
+      const nl = name.toLowerCase();
+      const ql = query.toLowerCase();
+      if (nl === ql) return 100;
+      if (nl.startsWith(ql)) return 80;
+      const words = nl.split(/[\s-]+/);
+      if (words.some(w => w.startsWith(ql))) return 60;
+      if (nl.includes(ql)) return 40;
+      return 0;
+    }
+
+    function renderSuggestions(query) {
+      if (!query.trim()) { dexSuggestions.classList.remove('open'); dexSuggestions.innerHTML = ''; sugIdx = -1; return; }
+      const scored = allBirds.map(b => ({ name: b, score: scoreBird(b, query) })).filter(b => b.score > 0).sort((a, b) => b.score - a.score).slice(0, 8);
+      if (!scored.length) { dexSuggestions.classList.remove('open'); dexSuggestions.innerHTML = ''; sugIdx = -1; return; }
+      sugIdx = -1;
+      dexSuggestions.innerHTML = scored.map((b, i) => {
+        const inGuide = spottedSet.has(b.name.toLowerCase());
+        const gi = guideNames.findIndex(n => n.toLowerCase() === b.name.toLowerCase());
+        const sci = gi >= 0 ? guideScientific[gi] : '';
+        return '<div class="sk-dex-sug-item" data-idx="' + i + '" data-bird="' + b.name.replace(/"/g, '&quot;') + '">' +
+          '<span><span class="sk-dex-sug-name">' + b.name + '</span>' + (sci ? ' <span class="sk-dex-sug-sci">' + sci + '</span>' : '') + '</span>' +
+          '<span class="sk-dex-sug-tag ' + (inGuide ? 'spotted' : 'unspotted') + '">' + (inGuide ? 'In Guide' : 'Not Spotted') + '</span>' +
+          '</div>';
+      }).join('');
+      dexSuggestions.classList.add('open');
+      dexSuggestions.querySelectorAll('.sk-dex-sug-item').forEach(item => {
+        item.addEventListener('click', () => selectBird(item.dataset.bird));
+      });
+    }
+
+    function selectBird(name) {
+      dexSearch.value = name;
+      dexSuggestions.classList.remove('open');
+      const idx = guideNames.findIndex(n => n.toLowerCase() === name.toLowerCase());
+      if (idx >= 0) { dexOffset = idx; updateDex(); }
+    }
+
+    dexSearch?.addEventListener('input', (e) => renderSuggestions(e.target.value));
+    dexSearch?.addEventListener('keydown', (e) => {
+      const items = dexSuggestions.querySelectorAll('.sk-dex-sug-item');
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); sugIdx = Math.min(sugIdx + 1, items.length - 1); items.forEach((it, i) => it.classList.toggle('active', i === sugIdx)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); sugIdx = Math.max(sugIdx - 1, 0); items.forEach((it, i) => it.classList.toggle('active', i === sugIdx)); }
+      else if (e.key === 'Enter' && sugIdx >= 0) { e.preventDefault(); selectBird(items[sugIdx].dataset.bird); }
+      else if (e.key === 'Escape') { dexSuggestions.classList.remove('open'); }
+    });
+    document.addEventListener('click', (e) => { if (!e.target.closest('.sk-dex-search-box')) dexSuggestions.classList.remove('open'); });
 
     // Lightbox
     const lb = document.getElementById('sk-lightbox');

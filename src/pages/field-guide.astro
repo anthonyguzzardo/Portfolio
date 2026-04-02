@@ -40,9 +40,18 @@ const fieldGuide = [
     <h1 class="fg-title">Field Guide</h1>
     <p class="fg-sub">{fieldGuide.length} species catalogued</p>
 
+    <div class="fg-search-wrap">
+      <div class="fg-search-box">
+        <svg class="fg-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="fg-search" id="fg-search" placeholder="Search species..." autocomplete="off" />
+        <div class="fg-suggestions" id="fg-suggestions"></div>
+      </div>
+      <p class="fg-search-count" id="fg-search-count"></p>
+    </div>
+
     <div class="fg-grid">
       {fieldGuide.map((bird) => (
-        <div class="sk-dex-card" data-rarity={bird.rarity}>
+        <div class="sk-dex-card" data-rarity={bird.rarity} data-name={bird.name.toLowerCase()} data-scientific={bird.scientific.toLowerCase()} data-habitat={bird.habitat.toLowerCase()} data-location={bird.location.toLowerCase()}>
           <div class="sk-dex-card-inner">
             <div class="sk-dex-front">
               <div class="sk-dex-header">
@@ -118,6 +127,45 @@ const fieldGuide = [
   .fg-sub {
     text-align: center; color: #8a8474; font-size: 1rem; margin-bottom: 2.5rem;
   }
+  .fg-search-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 2rem; }
+  .fg-search-box { position: relative; width: 100%; max-width: 400px; }
+  .fg-search-icon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: #5B8C3E; pointer-events: none;
+  }
+  .fg-search {
+    width: 100%; padding: 0.65rem 0.75rem 0.65rem 2.25rem;
+    background: #1a1f1c; border: 1px solid #2a302c; border-radius: 8px;
+    color: #e8e4dc; font-family: 'Inter', sans-serif; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .fg-search::placeholder { color: #555; }
+  .fg-search:focus { border-color: #5B8C3E; }
+  .fg-search-count { font-size: 0.75rem; color: #555; margin-top: 0.5rem; min-height: 1.1em; }
+  .fg-suggestions {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: #1a1f1c; border: 1px solid #2a302c; border-radius: 8px;
+    max-height: 240px; overflow-y: auto; z-index: 50;
+  }
+  .fg-suggestions.open { display: block; }
+  .fg-sug-item {
+    padding: 0.5rem 0.75rem; font-size: 0.8rem; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    transition: background 0.15s;
+  }
+  .fg-sug-item:hover, .fg-sug-item.active { background: rgba(91,140,62,0.12); }
+  .fg-sug-item + .fg-sug-item { border-top: 1px solid #222; }
+  .fg-sug-name { color: #e8e4dc; }
+  .fg-sug-sci { color: #7DB356; font-style: italic; font-size: 0.7rem; }
+  .fg-sug-tag {
+    font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 0.1rem 0.4rem; border-radius: 100px; flex-shrink: 0; margin-left: 0.5rem;
+  }
+  .fg-sug-tag.spotted { color: #5B8C3E; background: rgba(91,140,62,0.15); }
+  .fg-sug-tag.unspotted { color: #555; background: rgba(255,255,255,0.05); }
+
+  .sk-dex-card.hidden { display: none; }
+
   .fg-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -194,4 +242,109 @@ const fieldGuide = [
   document.querySelectorAll('.sk-dex-card').forEach(card => {
     card.addEventListener('click', () => card.classList.toggle('flipped'));
   });
+
+  const knownBirds = [
+    'American Robin','American Goldfinch','American Crow','American Kestrel','American Woodcock','American Bittern','American Coot','American White Pelican','American Wigeon','American Redstart',
+    'Bald Eagle','Baltimore Oriole','Barn Owl','Barn Swallow','Barred Owl','Belted Kingfisher','Black-capped Chickadee','Blue Jay','Blue-winged Teal','Bobolink','Brown Thrasher','Brown Creeper','Brown-headed Cowbird','Broad-winged Hawk','Bufflehead',
+    'Canada Goose','Carolina Wren','Cedar Waxwing','Chimney Swift','Chipping Sparrow','Clay-colored Sparrow','Common Loon','Common Grackle','Common Merganser','Common Nighthawk','Common Yellowthroat','Cooper\'s Hawk',
+    'Dark-eyed Junco','Double-crested Cormorant','Downy Woodpecker','Dunlin',
+    'Eastern Bluebird','Eastern Kingbird','Eastern Meadowlark','Eastern Phoebe','Eastern Screech-Owl','Eastern Towhee','Eastern Wood-Pewee','European Starling',
+    'Fox Sparrow','Field Sparrow',
+    'Golden-crowned Kinglet','Gray Catbird','Great Blue Heron','Great Horned Owl','Great Egret','Greater Yellowlegs','Green Heron','Green-winged Teal',
+    'Hairy Woodpecker','Hermit Thrush','Herring Gull','Hooded Merganser','Hooded Warbler','House Finch','House Sparrow','House Wren',
+    'Indigo Bunting',
+    'Killdeer','King Rail',
+    'Least Sandpiper','Least Flycatcher','Lesser Yellowlegs','Lincoln\'s Sparrow','Loggerhead Shrike','Long-eared Owl',
+    'Magnolia Warbler','Mallard','Marsh Wren','Merlin','Mourning Dove','Mourning Warbler',
+    'Nashville Warbler','Northern Cardinal','Northern Flicker','Northern Harrier','Northern Mockingbird','Northern Pintail','Northern Rough-winged Swallow','Northern Saw-whet Owl','Northern Shoveler',
+    'Olive-sided Flycatcher','Orange-crowned Warbler','Orchard Oriole','Osprey','Ovenbird',
+    'Palm Warbler','Peregrine Falcon','Philadelphia Vireo','Pied-billed Grebe','Pileated Woodpecker','Pine Siskin','Pine Warbler','Prothonotary Warbler','Purple Finch','Purple Martin',
+    'Red-bellied Woodpecker','Red-breasted Nuthatch','Red-eyed Vireo','Red-headed Woodpecker','Red-shouldered Hawk','Red-tailed Hawk','Red-winged Blackbird','Ring-billed Gull','Ring-necked Duck','Ring-necked Pheasant','Rose-breasted Grosbeak','Ruby-crowned Kinglet','Ruby-throated Hummingbird','Ruddy Duck','Ruffed Grouse','Rusty Blackbird',
+    'Sandhill Crane','Savannah Sparrow','Scarlet Tanager','Sedge Wren','Sharp-shinned Hawk','Short-eared Owl','Snowy Owl','Solitary Sandpiper','Song Sparrow','Spotted Sandpiper','Swainson\'s Thrush','Swamp Sparrow',
+    'Tennessee Warbler','Tree Swallow','Trumpeter Swan','Tufted Titmouse','Turkey Vulture',
+    'Veery','Virginia Rail',
+    'Warbling Vireo','White-breasted Nuthatch','White-crowned Sparrow','White-throated Sparrow','Wild Turkey','Willow Flycatcher','Wilson\'s Warbler','Winter Wren','Wood Duck','Wood Thrush',
+    'Yellow Warbler','Yellow-bellied Sapsucker','Yellow-billed Cuckoo','Yellow-rumped Warbler','Yellow-throated Vireo',
+  ];
+
+  const fgCards = document.querySelectorAll('.fg-grid .sk-dex-card');
+  const fgSearch = document.getElementById('fg-search');
+  const fgSuggestions = document.getElementById('fg-suggestions');
+  const fgCount = document.getElementById('fg-search-count');
+  const grid = document.querySelector('.fg-grid');
+  const guideNames = Array.from(fgCards).map(c => c.dataset.name || '');
+  const guideSci = Array.from(fgCards).map(c => c.dataset.scientific || '');
+  const spottedSet = new Set(guideNames);
+  const allBirds = [...new Set([...Array.from(fgCards).map(c => (c.querySelector('.sk-dex-name')?.textContent || '')), ...knownBirds])].sort();
+  let sugIdx = -1;
+
+  function scoreBird(name, query) {
+    const nl = name.toLowerCase(), ql = query.toLowerCase();
+    if (nl === ql) return 100;
+    if (nl.startsWith(ql)) return 80;
+    if (nl.split(/[\s-]+/).some(w => w.startsWith(ql))) return 60;
+    if (nl.includes(ql)) return 40;
+    return 0;
+  }
+
+  function scoreCard(card, query) {
+    const ql = query.toLowerCase();
+    const fields = ['name', 'scientific', 'habitat', 'location'];
+    let best = 0;
+    for (const f of fields) {
+      const val = card.dataset[f] || '';
+      if (val === ql) best = Math.max(best, 100);
+      else if (val.startsWith(ql)) best = Math.max(best, 80);
+      else if (val.split(/[\s,-]+/).some(w => w.startsWith(ql))) best = Math.max(best, 60);
+      else if (val.includes(ql)) best = Math.max(best, 40);
+    }
+    return best;
+  }
+
+  function filterGrid(query) {
+    if (!query.trim()) {
+      fgCards.forEach(c => { c.classList.remove('hidden'); c.style.order = ''; });
+      fgCount.textContent = '';
+      return;
+    }
+    let shown = 0;
+    const scored = Array.from(fgCards).map((c, i) => ({ card: c, score: scoreCard(c, query), idx: i }));
+    scored.sort((a, b) => b.score - a.score || a.idx - b.idx);
+    scored.forEach((s, order) => {
+      if (s.score > 0) { s.card.classList.remove('hidden'); s.card.style.order = String(order); shown++; }
+      else { s.card.classList.add('hidden'); s.card.style.order = ''; }
+    });
+    fgCount.textContent = shown + ' of ' + fgCards.length + ' species';
+  }
+
+  function renderSuggestions(query) {
+    if (!query.trim()) { fgSuggestions.classList.remove('open'); fgSuggestions.innerHTML = ''; sugIdx = -1; return; }
+    const scored = allBirds.map(b => ({ name: b, score: scoreBird(b, query) })).filter(b => b.score > 0).sort((a, b) => b.score - a.score).slice(0, 8);
+    if (!scored.length) { fgSuggestions.classList.remove('open'); fgSuggestions.innerHTML = ''; sugIdx = -1; return; }
+    sugIdx = -1;
+    fgSuggestions.innerHTML = scored.map((b, i) => {
+      const inGuide = spottedSet.has(b.name.toLowerCase());
+      const gi = guideNames.indexOf(b.name.toLowerCase());
+      const sci = gi >= 0 ? guideSci[gi] : '';
+      return '<div class="fg-sug-item" data-idx="' + i + '" data-bird="' + b.name.replace(/"/g, '&quot;') + '">' +
+        '<span><span class="fg-sug-name">' + b.name + '</span>' + (sci ? ' <span class="fg-sug-sci">' + sci + '</span>' : '') + '</span>' +
+        '<span class="fg-sug-tag ' + (inGuide ? 'spotted' : 'unspotted') + '">' + (inGuide ? 'In Guide' : 'Not Spotted') + '</span>' +
+        '</div>';
+    }).join('');
+    fgSuggestions.classList.add('open');
+    fgSuggestions.querySelectorAll('.fg-sug-item').forEach(item => {
+      item.addEventListener('click', () => { fgSearch.value = item.dataset.bird; fgSuggestions.classList.remove('open'); filterGrid(item.dataset.bird); });
+    });
+  }
+
+  fgSearch?.addEventListener('input', (e) => { renderSuggestions(e.target.value); filterGrid(e.target.value); });
+  fgSearch?.addEventListener('keydown', (e) => {
+    const items = fgSuggestions.querySelectorAll('.fg-sug-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); sugIdx = Math.min(sugIdx + 1, items.length - 1); items.forEach((it, i) => it.classList.toggle('active', i === sugIdx)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); sugIdx = Math.max(sugIdx - 1, 0); items.forEach((it, i) => it.classList.toggle('active', i === sugIdx)); }
+    else if (e.key === 'Enter' && sugIdx >= 0) { e.preventDefault(); const bird = items[sugIdx].dataset.bird; fgSearch.value = bird; fgSuggestions.classList.remove('open'); filterGrid(bird); }
+    else if (e.key === 'Escape') { fgSuggestions.classList.remove('open'); }
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('.fg-search-box')) fgSuggestions.classList.remove('open'); });
 </script>
