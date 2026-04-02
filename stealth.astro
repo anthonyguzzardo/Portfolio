@@ -1,0 +1,702 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Dealifier | Local Deals for Businesses & Shoppers"
+  description="Dealifier connects local businesses with deal-seeking shoppers. Grow your business or discover amazing savings near you."
+  theme="dark"
+>
+  <main id="main-content" class="landing">
+    <div class="landing-inner">
+      <div class="wordmark-area">
+        <div class="shadow-layer" id="shadow-layer" aria-hidden="true">
+          <span class="shadow-letter">D</span><span class="shadow-letter">e</span><span class="shadow-letter">a</span><span class="shadow-letter">l</span><span class="shadow-letter">i</span><span class="shadow-letter">f</span><span class="shadow-letter">i</span><span class="shadow-letter">e</span><span class="shadow-letter">r</span>
+        </div>
+        <h1 class="wordmark" id="wordmark-text">
+          <span class="letter letter-D">D</span><span class="letter letter-e">e</span><span class="letter letter-a">a</span><span class="letter letter-l">l</span><span class="letter letter-reveal letter-i1">i</span><span class="letter letter-reveal letter-f">f</span><span class="letter letter-reveal letter-i2">i</span><span class="letter letter-reveal letter-e2">e</span><span class="letter letter-reveal letter-r">r</span>
+        </h1>
+      </div>
+
+      <button class="nav-tab coming-soon-btn" id="coming-soon-btn" type="button">
+        Coming Soon
+      </button>
+    </div>
+
+  </main>
+</BaseLayout>
+
+<style>
+  .landing {
+    height: 100vh;
+    background-color: var(--color-bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .landing-inner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--container-padding);
+  }
+
+  /* ============================================
+     Wordmark Area
+     ============================================ */
+  .wordmark-area {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ============================================
+     Shadow layer -- black text behind wordmark,
+     clipped to spotlight circle, offset by JS
+     ============================================ */
+  .shadow-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    font-size: clamp(3rem, 17vw, 8rem);
+    font-weight: var(--font-weight-black);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    text-align: center;
+    z-index: 1;
+    pointer-events: none;
+    clip-path: circle(0px at 0px 0px);
+    opacity: 0;
+  }
+
+  .shadow-layer.active {
+    opacity: 1;
+  }
+
+  .shadow-letter {
+    display: inline-block;
+    color: rgba(0, 0, 0, 0.9);
+  }
+
+  .wordmark {
+    font-size: clamp(3rem, 17vw, 8rem);
+    font-weight: var(--font-weight-black);
+    margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ============================================
+     Hover wave -- letters lift in sequence
+     Only active after intro animation completes (.settled)
+     Uses transition for the lift instead of animation
+     ============================================ */
+  .wordmark.settled .letter {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: translateY(0);
+  }
+
+  /* ============================================
+     Spotlight beam -- 3D cone intersection ellipse
+     Uses mix-blend-mode to partially brighten letters
+     ============================================ */
+  :global(.spotlight-beam) {
+    position: fixed;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.1) 85%,
+      transparent 100%
+    );
+    mix-blend-mode: screen;
+    pointer-events: none;
+    z-index: 3;
+    opacity: 0;
+    transition: opacity 300ms ease;
+    will-change: transform, width, height;
+  }
+
+  :global(.spotlight-beam.visible) {
+    opacity: 1;
+  }
+
+  /* ============================================
+     Letters -- shared
+     ============================================ */
+  .letter {
+    display: inline-block;
+    z-index: 2;
+    position: relative;
+  }
+
+  /* Shared fall keyframes */
+  @keyframes letter-fall {
+    0% {
+      opacity: 0;
+      transform: translateY(-100vh);
+    }
+    8% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /*
+    Per-letter bounce & spring keyframes scaled by "mass":
+    D = heaviest (capital, wide)  -- 48px compression
+    e = medium                    -- 30px compression
+    a = medium                    -- 28px compression
+    l = lightest (narrow)         -- 14px compression
+    Each bounce decays proportionally.
+  */
+
+  /* ============================================
+     Swing smash -- "Deal" winds up left, swings
+     right into "ifier" to reveal the "r".
+     Fires after all letters have settled (~2.2s).
+     ============================================ */
+  /* First swing -- slow pull back, little tap */
+  @keyframes swing-tap {
+    0%   { transform: translateX(0); }
+    60%  { transform: translateX(-8px); }
+    85%  { transform: translateX(3px); }
+    100% { transform: translateX(0); }
+  }
+
+  /* Second swing -- slow deliberate wind-up... pause... RUSH in */
+  @keyframes swing-smash {
+    0%   { transform: translateX(0); }
+    40%  { transform: translateX(-50px); }
+    55%  { transform: translateX(-50px); }
+    75%  { transform: translateX(16px); }
+    90%  { transform: translateX(-3px); }
+    100% { transform: translateX(0); }
+  }
+
+
+  /* r barely appears -- ghost of a letter */
+  @keyframes r-peek {
+    0%   { opacity: 0; transform: scale(0.3); }
+    100% { opacity: 0.15; transform: scale(0.6); }
+  }
+
+  /* r smoothly scales up to full size */
+  @keyframes r-pop {
+    0%   { opacity: 0.15; transform: scale(0.6); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* D bounce -- heavy */
+  @keyframes bounce-D {
+    0%   { transform: translateY(0); }
+    15%  { transform: translateY(48px); }
+    35%  { transform: translateY(-36px); }
+    50%  { transform: translateY(18px); }
+    65%  { transform: translateY(-10px); }
+    78%  { transform: translateY(5px); }
+    88%  { transform: translateY(-2px); }
+    100% { transform: translateY(0); }
+  }
+
+  /* e bounce -- medium */
+  @keyframes bounce-e {
+    0%   { transform: translateY(0); }
+    15%  { transform: translateY(30px); }
+    35%  { transform: translateY(-22px); }
+    50%  { transform: translateY(11px); }
+    65%  { transform: translateY(-6px); }
+    78%  { transform: translateY(3px); }
+    88%  { transform: translateY(-1px); }
+    100% { transform: translateY(0); }
+  }
+
+  /* a bounce -- medium */
+  @keyframes bounce-a {
+    0%   { transform: translateY(0); }
+    15%  { transform: translateY(28px); }
+    35%  { transform: translateY(-20px); }
+    50%  { transform: translateY(10px); }
+    65%  { transform: translateY(-5px); }
+    78%  { transform: translateY(3px); }
+    88%  { transform: translateY(-1px); }
+    100% { transform: translateY(0); }
+  }
+
+  /* l bounce -- light */
+  @keyframes bounce-l {
+    0%   { transform: translateY(0); }
+    15%  { transform: translateY(14px); }
+    35%  { transform: translateY(-10px); }
+    50%  { transform: translateY(5px); }
+    65%  { transform: translateY(-3px); }
+    78%  { transform: translateY(1px); }
+    88%  { transform: translateY(-1px); }
+    100% { transform: translateY(0); }
+  }
+
+  /* ============================================
+     D -- heaviest, falls at 0.2s, lands at 0.65s
+     ============================================ */
+  .letter-D {
+    color: var(--brand-red);
+    opacity: 0;
+    animation:
+      letter-fall 0.45s cubic-bezier(0.55, 0, 1, 0.45) forwards 0.2s,
+      bounce-D 0.8s ease forwards 0.65s,
+      swing-tap 0.4s ease forwards 2.2s,
+      swing-smash 0.9s ease forwards 2.9s;
+  }
+
+  /* ============================================
+     e -- medium, falls at 0.45s, lands at 0.9s
+     ============================================ */
+  .letter-e {
+    color: var(--brand-red);
+    opacity: 0;
+    animation:
+      letter-fall 0.45s cubic-bezier(0.55, 0, 1, 0.45) forwards 0.45s,
+      bounce-e 0.8s ease forwards 0.9s,
+      swing-tap 0.4s ease forwards 2.2s,
+      swing-smash 0.9s ease forwards 2.9s;
+  }
+
+  /* ============================================
+     a -- medium, falls at 0.7s, lands at 1.15s
+     ============================================ */
+  .letter-a {
+    color: var(--brand-red);
+    opacity: 0;
+    animation:
+      letter-fall 0.45s cubic-bezier(0.55, 0, 1, 0.45) forwards 0.7s,
+      bounce-a 0.8s ease forwards 1.15s,
+      swing-tap 0.4s ease forwards 2.2s,
+      swing-smash 0.9s ease forwards 2.9s;
+  }
+
+  /* ============================================
+     l -- lightest, falls at 0.95s, lands at 1.4s
+     ============================================ */
+  .letter-l {
+    color: var(--brand-red);
+    opacity: 0;
+    animation:
+      letter-fall 0.45s cubic-bezier(0.55, 0, 1, 0.45) forwards 0.95s,
+      bounce-l 0.7s ease forwards 1.4s,
+      swing-tap 0.4s ease forwards 2.2s,
+      swing-smash 0.9s ease forwards 2.9s;
+  }
+
+
+  /* ============================================
+     Reveal letters (white): i, f, i, e, r
+     Each appears when its paired red letter lands.
+     D lands 0.65s -> i1, e lands 0.9s -> f,
+     a lands 1.15s -> i2, l lands 1.4s -> e2
+     ============================================ */
+  .letter-reveal {
+    color: var(--color-text);
+    opacity: 0;
+  }
+
+  @keyframes reveal {
+    0%   { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .letter-i1 {
+    animation: reveal 0.25s ease-out forwards 0.65s;
+  }
+
+  .letter-f {
+    animation: reveal 0.25s ease-out forwards 0.9s;
+  }
+
+  .letter-i2 {
+    animation: reveal 0.25s ease-out forwards 1.15s;
+  }
+
+  .letter-e2 {
+    animation: reveal 0.25s ease-out forwards 1.4s;
+  }
+
+  /* r -- peeks on first tap, pops on second smash */
+  .letter-r {
+    animation:
+      r-peek 0.2s ease-out forwards 2.4s,
+      r-pop 0.4s ease-out forwards 3.4s;
+  }
+
+  /* ============================================
+     Coming Soon Button
+     ============================================ */
+  .coming-soon-btn {
+    display: inline-block;
+    margin-top: var(--space-8);
+    padding: var(--space-3) var(--space-10);
+    font-family: inherit;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    color: var(--color-text);
+    background: none;
+    border: var(--border-width) solid var(--color-text-faint);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    animation: fade-up 0.5s ease forwards;
+    animation-delay: 3.8s;
+    transition:
+      color var(--transition-fast),
+      border-color var(--transition-fast),
+      transform var(--transition-normal),
+      box-shadow var(--transition-normal);
+  }
+
+  .coming-soon-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background-color: var(--brand-red);
+    transition: width var(--transition-normal);
+  }
+
+  @media (hover: hover) {
+    .coming-soon-btn:hover {
+      color: var(--brand-red-light);
+      border-color: var(--brand-red-light);
+      transform: translateY(-4px);
+      box-shadow: 4px 4px 0 var(--brand-red);
+    }
+
+    .coming-soon-btn:hover::before {
+      width: 100%;
+    }
+  }
+
+  .coming-soon-btn:active {
+    color: var(--brand-red-light);
+    border-color: var(--brand-red-light);
+  }
+
+  .coming-soon-btn:focus-visible {
+    outline: 2px solid var(--brand-red-light);
+    outline-offset: 2px;
+  }
+
+  @keyframes fade-up {
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+
+  /* ============================================
+     Mobile -- scale down bounce/swing pixel values
+     ============================================ */
+  @media (max-width: 639px) {
+    .coming-soon-btn {
+      padding: var(--space-2) var(--space-5);
+      font-size: var(--font-size-xs);
+    }
+
+    /* Scaled-down bounces for smaller text */
+    .letter-D {
+      animation:
+        letter-fall 0.45s cubic-bezier(0.55, 0, 1, 0.45) forwards 0.2s,
+        bounce-D-sm 0.8s ease forwards 0.65s,
+        swing-tap-sm 0.4s ease forwards 2.2s,
+        swing-smash-sm 0.9s ease forwards 2.9s;
+    }
+
+    .letter-e {
+      animation:
+        letter-fall 0.45s cubic-bezier(0.55, 0, 1, 0.45) forwards 0.45s,
+        bounce-e-sm 0.8s ease forwards 0.9s,
+        swing-tap-sm 0.4s ease forwards 2.2s,
+        swing-smash-sm 0.9s ease forwards 2.9s;
+    }
+
+    .letter-a {
+      animation:
+        letter-fall 0.45s cubic-bezier(0.55, 0, 1, 0.45) forwards 0.7s,
+        bounce-a-sm 0.8s ease forwards 1.15s,
+        swing-tap-sm 0.4s ease forwards 2.2s,
+        swing-smash-sm 0.9s ease forwards 2.9s;
+    }
+
+    .letter-l {
+      animation:
+        letter-fall 0.45s cubic-bezier(0.55, 0, 1, 0.45) forwards 0.95s,
+        bounce-l-sm 0.7s ease forwards 1.4s,
+        swing-tap-sm 0.4s ease forwards 2.2s,
+        swing-smash-sm 0.9s ease forwards 2.9s;
+    }
+  }
+
+  /* Mobile bounce/swing keyframes (~40% of desktop values) */
+  @keyframes bounce-D-sm {
+    0%   { transform: translateY(0); }
+    15%  { transform: translateY(18px); }
+    35%  { transform: translateY(-14px); }
+    50%  { transform: translateY(7px); }
+    65%  { transform: translateY(-4px); }
+    78%  { transform: translateY(2px); }
+    88%  { transform: translateY(-1px); }
+    100% { transform: translateY(0); }
+  }
+
+  @keyframes bounce-e-sm {
+    0%   { transform: translateY(0); }
+    15%  { transform: translateY(12px); }
+    35%  { transform: translateY(-9px); }
+    50%  { transform: translateY(4px); }
+    65%  { transform: translateY(-2px); }
+    78%  { transform: translateY(1px); }
+    100% { transform: translateY(0); }
+  }
+
+  @keyframes bounce-a-sm {
+    0%   { transform: translateY(0); }
+    15%  { transform: translateY(11px); }
+    35%  { transform: translateY(-8px); }
+    50%  { transform: translateY(4px); }
+    65%  { transform: translateY(-2px); }
+    78%  { transform: translateY(1px); }
+    100% { transform: translateY(0); }
+  }
+
+  @keyframes bounce-l-sm {
+    0%   { transform: translateY(0); }
+    15%  { transform: translateY(6px); }
+    35%  { transform: translateY(-4px); }
+    50%  { transform: translateY(2px); }
+    65%  { transform: translateY(-1px); }
+    100% { transform: translateY(0); }
+  }
+
+  @keyframes swing-tap-sm {
+    0%   { transform: translateX(0); }
+    60%  { transform: translateX(-4px); }
+    85%  { transform: translateX(2px); }
+    100% { transform: translateX(0); }
+  }
+
+  @keyframes swing-smash-sm {
+    0%   { transform: translateX(0); }
+    40%  { transform: translateX(-20px); }
+    55%  { transform: translateX(-20px); }
+    75%  { transform: translateX(6px); }
+    90%  { transform: translateX(-1px); }
+    100% { transform: translateX(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .letter-D,
+    .letter-e,
+    .letter-a,
+    .letter-l,
+    .letter-i1,
+    .letter-f,
+    .letter-i2,
+    .letter-e2 {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    .coming-soon-btn {
+      animation: none;
+      opacity: 1;
+    }
+
+    .coming-soon-btn:hover {
+      transform: none;
+    }
+
+    .shadow-layer {
+      display: none !important;
+    }
+  }
+</style>
+
+<script>
+  // -- Coming Soon button cycler --
+  const phrases = [
+    'Coming Soon',
+    'No Really, Soon',
+    'Still Clicking?',
+    'We Admire the Dedication',
+    'Not Quite Yet',
+    'But We Like Your Energy',
+    'Stay Tuned',
+    'Seriously Though, Soon',
+    'Last One, We Promise',
+    '...Okay One More',
+  ];
+
+  const btn = document.getElementById('coming-soon-btn');
+  if (btn) {
+    let index = 0;
+    btn.addEventListener('click', () => {
+      index = (index + 1) % phrases.length;
+      btn.textContent = phrases[index];
+    });
+  }
+
+  // -- Wordmark: settle after intro, click to replay, spotlight shadows --
+  const wordmark = document.getElementById('wordmark-text');
+  const shadowLayer = document.getElementById('shadow-layer');
+  if (wordmark && shadowLayer) {
+    const letters = wordmark.querySelectorAll<HTMLElement>('.letter');
+    const shadowLetters = shadowLayer.querySelectorAll<HTMLElement>('.shadow-letter');
+    let isSettled = false;
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const SPOTLIGHT_RADIUS = 110; // px
+    const SHADOW_MAX = 20;        // max shadow offset px
+    const EPSILON = 0.01;
+
+    function scheduleSettle() {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        wordmark!.classList.add('settled');
+        isSettled = true;
+      }, 5000);
+    }
+
+    // Mark as settled after the full intro animation
+    scheduleSettle();
+
+    // Create spotlight beam element (desktop only -- no mouse on mobile)
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    const spotlight = document.createElement('div');
+    spotlight.classList.add('spotlight-beam');
+    if (!isTouchDevice) document.body.appendChild(spotlight);
+    let spotlightVisible = false;
+
+    document.addEventListener('mousemove', (e) => {
+      if (isTouchDevice) return;
+      if (!isSettled) return;
+
+      const Px = e.clientX;
+      const Py = e.clientY;
+
+      // Position the spotlight beam
+      spotlight.style.left = Px + 'px';
+      spotlight.style.top = Py + 'px';
+      spotlight.style.width = (SPOTLIGHT_RADIUS * 2) + 'px';
+      spotlight.style.height = (SPOTLIGHT_RADIUS * 2) + 'px';
+      spotlight.style.transform = 'translate(-50%, -50%)';
+
+      // Check if circle overlaps the wordmark
+      const wordmarkRect = wordmark.getBoundingClientRect();
+      const closestX = Math.max(wordmarkRect.left, Math.min(Px, wordmarkRect.right));
+      const closestY = Math.max(wordmarkRect.top, Math.min(Py, wordmarkRect.bottom));
+      const distToEdge = Math.sqrt((Px - closestX) ** 2 + (Py - closestY) ** 2);
+      const touching = distToEdge <= SPOTLIGHT_RADIUS;
+
+      if (touching && !spotlightVisible) {
+        spotlight.classList.add('visible');
+        shadowLayer.classList.add('active');
+        spotlightVisible = true;
+      } else if (!touching && spotlightVisible) {
+        spotlight.classList.remove('visible');
+        shadowLayer.classList.remove('active');
+        spotlightVisible = false;
+      }
+
+      if (!touching) return;
+
+      // Clip the shadow layer to the spotlight circle
+      // Convert mouse position from viewport to shadow-layer local coords
+      const parent = shadowLayer.parentElement;
+      if (!parent) return;
+      const areaRect = parent.getBoundingClientRect();
+      const clipX = Px - areaRect.left;
+      const clipY = Py - areaRect.top;
+      shadowLayer.style.clipPath = `circle(${SPOTLIGHT_RADIUS}px at ${clipX.toFixed(1)}px ${clipY.toFixed(1)}px)`;
+
+      // Offset each shadow letter based on mouse position relative to each real letter
+      letters.forEach((letter, i) => {
+        const rect = letter.getBoundingClientRect();
+        const letterCX = rect.left + rect.width / 2;
+        const letterCY = rect.top + rect.height / 2;
+
+        const sDx = Px - letterCX;
+        const sDy = Py - letterCY;
+        const sDist = Math.sqrt(sDx * sDx + sDy * sDy);
+        const sNormX = sDist > EPSILON ? sDx / sDist : 0;
+        const sNormY = sDist > EPSILON ? sDy / sDist : 0;
+
+        // Shadow length: closer = shorter, further = longer
+        const shadowLen = Math.max(3, Math.min(SHADOW_MAX, (sDist / 150) * SHADOW_MAX));
+
+        // Shadow offset goes opposite direction of mouse
+        const offsetX = -sNormX * shadowLen;
+        const offsetY = -sNormY * shadowLen;
+
+        if (shadowLetters[i]) {
+          shadowLetters[i].style.transform = `translate(${offsetX.toFixed(1)}px, ${offsetY.toFixed(1)}px)`;
+        }
+      });
+    });
+
+    // Clear when mouse leaves
+    document.addEventListener('mouseleave', () => {
+      spotlight.classList.remove('visible');
+      shadowLayer.classList.remove('active');
+      spotlightVisible = false;
+      shadowLayer.style.clipPath = 'circle(0px at 0px 0px)';
+      shadowLetters.forEach((sl) => { sl.style.transform = ''; });
+    });
+
+    // Click to replay the full animation
+    wordmark.addEventListener('click', () => {
+      wordmark.classList.remove('settled');
+      isSettled = false;
+      spotlight.classList.remove('visible');
+      shadowLayer.classList.remove('active');
+      spotlightVisible = false;
+      shadowLayer.style.clipPath = 'circle(0px at 0px 0px)';
+      shadowLetters.forEach((sl) => { sl.style.transform = ''; });
+
+      letters.forEach((letter) => {
+        letter.style.textShadow = '';
+        letter.style.animation = 'none';
+        letter.style.opacity = '0';
+      });
+
+      void wordmark.offsetHeight;
+
+      letters.forEach((letter) => {
+        letter.style.animation = '';
+        letter.style.opacity = '';
+      });
+
+      scheduleSettle();
+    });
+  }
+</script>
