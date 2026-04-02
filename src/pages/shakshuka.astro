@@ -17,13 +17,19 @@ const galleryItems = [
 ];
 
 const stats = [
-  { label: 'Species Identified', value: 247 },
-  { label: 'Photos Taken', value: 12480 },
-  { label: 'States Visited', value: 5 },
-  { label: 'Hours in Field', value: 1860 },
-  { label: 'Life List Species', value: 312 },
-  { label: 'Sightings This Month', value: 14 },
-];
+  { label: 'Lifers', value: 312, sub: '+18 this year', featured: true },
+  { label: 'Field Hours', value: 1860, sub: 'Peak month: May' },
+  { label: 'Hotspots Visited', value: 47, sub: 'Across 5 states' },
+  { label: 'Photo Archive', value: 12480, sub: '82% from Midwest' },
+  { label: 'New This Month', value: 14, sub: 'Best day: 9 species' },
+] as const;
+
+const signatureStat = {
+  label: 'Rarest Sighting',
+  value: 'Snowy Owl',
+  detail: 'Illinois Beach State Park — March 2026',
+  note: 'First state record in 3 years. Waited 4 hours in 18°F wind chill.',
+};
 
 const recentSightings = [
   { species: 'Pileated Woodpecker', location: 'Starved Rock, IL', date: '2026-03-28' },
@@ -62,10 +68,9 @@ const categories = ['all', 'birds', 'mammals', 'reptiles', 'landscapes'];
 
 const iconPaths = [
   '<path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/>',
-  '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
-  '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
   '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-  '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/>',
+  '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+  '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
   '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
 ];
 ---
@@ -106,16 +111,17 @@ const iconPaths = [
   <section class="sk-hero">
     <div class="sk-hero-bg"></div>
     <div class="sk-hero-content">
-      <p class="sk-hero-label">Wildlife & Bird Photography</p>
+      <p class="sk-hero-label">Bird Enthusiast & Nature Lover</p>
       <h1>Shakshuka</h1>
-      <p class="sk-hero-subtitle">Through the Lens of the Wild</p>
+      <p class="sk-hero-subtitle">Amateur Wildlife & Landscape Photographer</p>
       <p class="sk-hero-bio">
-        Amateur birder and wildlife photographer documenting the beauty of North American
-        birds and animals. Every frame tells a story of patience, wonder, and the quiet
-        magic of the natural world.
+        Brand Ambassador for Kite Optics, Enabling Greater Access to Nature
       </p>
       <div class="sk-hero-buttons">
         <a href="#gallery" class="sk-btn-primary">Explore Gallery</a>
+        <a href="https://www.instagram.com/jonny.becks/" class="sk-btn-outline" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 6px;"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>Instagram
+        </a>
         <a href={`mailto:${CONTACT_EMAIL}`} class="sk-btn-outline">Get in Touch</a>
       </div>
     </div>
@@ -155,33 +161,38 @@ const iconPaths = [
   <section id="field-guide" class="sk-section">
     <div class="sk-container">
       <h2 class="sk-section-title sk-anim">Field Guide</h2>
-      <p class="sk-section-sub sk-anim">Flip through the life list — {fieldGuide.length} species catalogued</p>
+      <p class="sk-section-sub sk-anim">Flip through the life list — {fieldGuide.length} species catalogued &nbsp;<a href="/field-guide" class="sk-view-all">View All</a></p>
 
-      <div class="sk-dex">
-        <button class="sk-dex-nav sk-dex-prev" id="dex-prev" aria-label="Previous">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <div class="sk-dex-shelf sk-anim">
+        <button class="sk-dex-arrow sk-dex-arrow-left" id="dex-left" aria-label="Scroll left">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-
-        <div class="sk-dex-viewport" id="dex-viewport">
-          {fieldGuide.map((bird, i) => (
-            <div class="sk-dex-card" data-index={i} data-rarity={bird.rarity}>
+        <div class="sk-dex-track" id="dex-track">
+          <div class="sk-dex-track-inner" id="dex-track-inner">
+          {fieldGuide.map((bird) => (
+            <div class="sk-dex-card" data-rarity={bird.rarity}>
               <div class="sk-dex-card-inner">
                 <div class="sk-dex-front">
-                  <div class="sk-dex-number">#{String(bird.id).padStart(3, '0')}</div>
-                  <div class="sk-dex-rarity">{bird.rarity}</div>
+                  <div class="sk-dex-header">
+                    <div class="sk-dex-number">Lifer #{String(bird.id).padStart(3, '0')} <span class="sk-dex-of">/ {fieldGuide.length}</span></div>
+                    <div class="sk-dex-rarity">{bird.rarity}</div>
+                  </div>
                   <div class="sk-dex-img-wrap">
                     <img src={bird.img} alt={bird.name} loading="lazy" />
                   </div>
                   <h3 class="sk-dex-name">{bird.name}</h3>
                   <p class="sk-dex-scientific">{bird.scientific}</p>
                   <div class="sk-dex-quick">
-                    <span>{bird.wingspan}</span>
-                    <span>{bird.sightings} sightings</span>
+                    <span>{bird.habitat.split(',')[0]}</span>
+                    <span>{bird.location.split(',')[0]}</span>
+                    <span>{bird.sightings}x seen</span>
                   </div>
-                  <p class="sk-dex-hint">Click to flip</p>
+                  <div class="sk-dex-flip-hint">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                  </div>
                 </div>
                 <div class="sk-dex-back">
-                  <div class="sk-dex-number">#{String(bird.id).padStart(3, '0')}</div>
+                  <div class="sk-dex-number">Lifer #{String(bird.id).padStart(3, '0')}</div>
                   <h3 class="sk-dex-name">{bird.name}</h3>
                   <div class="sk-dex-details">
                     <div class="sk-dex-row"><span class="sk-dex-label">Habitat</span><span>{bird.habitat}</span></div>
@@ -193,20 +204,18 @@ const iconPaths = [
                     <div class="sk-dex-row"><span class="sk-dex-label">Location</span><span>{bird.location}</span></div>
                     <div class="sk-dex-row"><span class="sk-dex-label">Sightings</span><span>{bird.sightings}</span></div>
                   </div>
-                  <p class="sk-dex-hint">Click to flip back</p>
+                  <div class="sk-dex-flip-hint">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                  </div>
                 </div>
               </div>
             </div>
           ))}
+          </div>
         </div>
-
-        <button class="sk-dex-nav sk-dex-next" id="dex-next" aria-label="Next">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <button class="sk-dex-arrow sk-dex-arrow-right" id="dex-right" aria-label="Scroll right">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
-      </div>
-
-      <div class="sk-dex-counter sk-anim">
-        <span id="dex-current">1</span> / <span id="dex-total">{fieldGuide.length}</span>
       </div>
     </div>
   </section>
@@ -218,16 +227,24 @@ const iconPaths = [
       <p class="sk-section-sub sk-anim">A birder's journey in data</p>
       <div class="sk-stats-grid">
         {stats.map((stat, i) => (
-          <div class="sk-stat-card sk-anim">
+          <div class={`sk-stat-card sk-anim${stat.featured ? ' sk-stat-featured' : ''}`}>
             <div class="sk-stat-icon">
-              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
                 <Fragment set:html={iconPaths[i]} />
               </svg>
             </div>
             <div class="sk-stat-num" data-target={stat.value}>0</div>
             <div class="sk-stat-label">{stat.label}</div>
+            <div class="sk-stat-sub">{stat.sub}</div>
           </div>
         ))}
+      </div>
+
+      <div class="sk-signature sk-anim">
+        <div class="sk-signature-label">{signatureStat.label}</div>
+        <div class="sk-signature-value">{signatureStat.value}</div>
+        <div class="sk-signature-detail">{signatureStat.detail}</div>
+        <p class="sk-signature-note">{signatureStat.note}</p>
       </div>
       <div class="sk-recent sk-anim">
         <h3>Recent Sightings</h3>
@@ -440,24 +457,36 @@ const iconPaths = [
   }
 
   /* FIELD GUIDE / DEX */
-  .sk-dex {
-    display: flex; align-items: center; justify-content: center; gap: 1.5rem;
-    position: relative; min-height: 520px;
+  #field-guide .sk-section-sub { margin-bottom: 1.5rem; }
+  .sk-view-all {
+    display: inline-block; margin-left: 0.25rem;
+    font-size: 0.85rem; color: #5B8C3E; font-weight: 500;
+    border-bottom: 1px solid transparent; transition: border-color 0.2s, color 0.2s;
   }
-  .sk-dex-viewport {
-    position: relative; width: 320px; height: 480px; perspective: 900px;
+  .sk-view-all:hover { color: #7DB356; border-color: #7DB356; }
+  .sk-dex-shelf {
+    display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+    position: relative;
+  }
+  .sk-dex-track {
+    overflow: hidden; width: 250px; flex-shrink: 0;
+  }
+  .sk-dex-track-inner {
+    display: flex; gap: 1.25rem;
+    transition: transform 0.4s ease;
   }
   .sk-dex-card {
-    position: absolute; inset: 0; opacity: 0; pointer-events: none;
-    transition: opacity 0.4s ease, transform 0.4s ease;
-    transform: scale(0.9) translateX(40px);
+    min-width: 250px; max-width: 250px; height: 420px;
+    perspective: 900px; flex-shrink: 0;
   }
-  .sk-dex-card.active {
-    opacity: 1; pointer-events: auto; transform: scale(1) translateX(0);
+  .sk-dex-arrow {
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid #2a302c;
+    display: flex; align-items: center; justify-content: center;
+    color: #8a8474; transition: all 0.2s; background: rgba(26,31,28,0.9);
+    flex-shrink: 0; z-index: 2;
   }
-  .sk-dex-card.prev {
-    opacity: 0; transform: scale(0.9) translateX(-40px);
-  }
+  .sk-dex-arrow:hover { border-color: #5B8C3E; color: #7DB356; background: rgba(91,140,62,0.1); }
+  .sk-dex-arrow.disabled { opacity: 0.25; pointer-events: none; }
   .sk-dex-card-inner {
     width: 100%; height: 100%; position: relative;
     transition: transform 0.6s ease; transform-style: preserve-3d; cursor: pointer;
@@ -465,98 +494,129 @@ const iconPaths = [
   .sk-dex-card.flipped .sk-dex-card-inner { transform: rotateY(180deg); }
   .sk-dex-front, .sk-dex-back {
     position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
-    border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column;
-    background: linear-gradient(145deg, #1a1f1c 0%, #141914 100%);
+    transform-style: flat; -webkit-transform-style: flat;
+    border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column;
     border: 2px solid #2a302c; overflow: hidden;
   }
   .sk-dex-back { transform: rotateY(180deg); }
 
-  /* Rarity border glow */
+  /* Rarity card tints */
   .sk-dex-card[data-rarity="common"] .sk-dex-front,
-  .sk-dex-card[data-rarity="common"] .sk-dex-back { border-color: #3d5c2e; }
+  .sk-dex-card[data-rarity="common"] .sk-dex-back {
+    background: linear-gradient(160deg, #1a1f1c 0%, #141914 100%);
+    border-color: #3d5c2e;
+  }
   .sk-dex-card[data-rarity="uncommon"] .sk-dex-front,
-  .sk-dex-card[data-rarity="uncommon"] .sk-dex-back { border-color: #5B8C3E; box-shadow: 0 0 20px rgba(91,140,62,0.15); }
+  .sk-dex-card[data-rarity="uncommon"] .sk-dex-back {
+    background: linear-gradient(160deg, #1c211a 0%, #161b14 100%);
+    border-color: #5B8C3E;
+    box-shadow: 0 0 25px rgba(91,140,62,0.12), inset 0 1px 0 rgba(91,140,62,0.08);
+  }
   .sk-dex-card[data-rarity="rare"] .sk-dex-front,
   .sk-dex-card[data-rarity="rare"] .sk-dex-back {
-    border-color: #C4813D; box-shadow: 0 0 25px rgba(196,129,61,0.25);
+    background: linear-gradient(160deg, #211d18 0%, #1a1610 100%);
+    border-color: #C4813D;
+    box-shadow: 0 0 30px rgba(196,129,61,0.2), inset 0 1px 0 rgba(196,129,61,0.1);
   }
 
+  .sk-dex-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 0.25rem;
+  }
   .sk-dex-number {
-    font-family: 'Inter', monospace; font-size: 0.75rem; font-weight: 600;
-    color: #5B8C3E; letter-spacing: 1px;
+    font-family: 'Inter', monospace; font-size: 0.7rem; font-weight: 600;
+    color: #5B8C3E; letter-spacing: 0.5px;
   }
+  .sk-dex-of { color: #555; font-weight: 400; }
   .sk-dex-rarity {
-    position: absolute; top: 1.25rem; right: 1.5rem;
-    font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;
-    padding: 0.2rem 0.6rem; border-radius: 100px;
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;
+    padding: 0.15rem 0.55rem; border-radius: 100px;
   }
-  [data-rarity="common"] .sk-dex-rarity { color: #5B8C3E; background: rgba(91,140,62,0.15); }
-  [data-rarity="uncommon"] .sk-dex-rarity { color: #7DB356; background: rgba(91,140,62,0.2); }
-  [data-rarity="rare"] .sk-dex-rarity { color: #C4813D; background: rgba(196,129,61,0.2); }
+  [data-rarity="common"] .sk-dex-rarity { color: #5B8C3E; background: rgba(91,140,62,0.12); }
+  [data-rarity="uncommon"] .sk-dex-rarity { color: #7DB356; background: rgba(91,140,62,0.18); }
+  [data-rarity="rare"] .sk-dex-rarity { color: #C4813D; background: rgba(196,129,61,0.18); }
 
   .sk-dex-img-wrap {
-    flex: 1; margin: 0.75rem 0; border-radius: 10px; overflow: hidden;
+    flex: 1; margin: 0.5rem 0; border-radius: 8px; overflow: hidden;
     background: #0f1210; min-height: 0;
   }
-  .sk-dex-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .sk-dex-img-wrap img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .sk-dex-card-inner:hover .sk-dex-img-wrap img { transform: scale(1.05); }
+
   .sk-dex-name {
-    font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700;
-    margin-bottom: 0.15rem;
+    font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 700;
+    margin-bottom: 0.1rem;
   }
   .sk-dex-scientific {
-    font-size: 0.8rem; color: #7DB356; font-style: italic; margin-bottom: 0.5rem;
+    font-size: 0.75rem; color: #7DB356; font-style: italic; margin-bottom: 0.4rem;
   }
   .sk-dex-quick {
     display: flex; justify-content: space-between;
-    font-size: 0.75rem; color: #8a8474; margin-bottom: 0.25rem;
+    font-size: 0.7rem; color: #a09882; letter-spacing: 0.2px;
   }
-  .sk-dex-hint {
-    font-size: 0.65rem; color: #555; text-align: center; margin-top: auto;
-    letter-spacing: 0.5px; text-transform: uppercase;
+  .sk-dex-flip-hint {
+    text-align: center; margin-top: auto; padding-top: 0.4rem;
+    color: #444; transition: color 0.2s;
   }
+  .sk-dex-card-inner:hover .sk-dex-flip-hint { color: #7DB356; }
 
   /* Back face */
-  .sk-dex-back .sk-dex-name { margin-top: 0.25rem; margin-bottom: 1rem; }
-  .sk-dex-details { flex: 1; display: flex; flex-direction: column; gap: 0.6rem; }
+  .sk-dex-back .sk-dex-number { margin-bottom: 0.15rem; }
+  .sk-dex-back .sk-dex-name { margin-bottom: 0.75rem; }
+  .sk-dex-details { flex: 1; display: flex; flex-direction: column; gap: 0.45rem; }
   .sk-dex-row {
     display: flex; justify-content: space-between; align-items: baseline;
-    font-size: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid #2a302c;
+    font-size: 0.78rem; padding-bottom: 0.4rem; border-bottom: 1px solid #2a302c;
   }
   .sk-dex-row:last-child { border-bottom: none; }
-  .sk-dex-label { color: #8a8474; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .sk-dex-label { color: #8a8474; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
   .sk-dex-warn { color: #C4813D; font-weight: 600; }
 
-  /* Nav arrows */
-  .sk-dex-nav {
-    width: 48px; height: 48px; border-radius: 50%; border: 1px solid #2a302c;
-    display: flex; align-items: center; justify-content: center;
-    color: #8a8474; transition: all 0.2s; background: rgba(26,31,28,0.8);
-    flex-shrink: 0;
-  }
-  .sk-dex-nav:hover { border-color: #5B8C3E; color: #7DB356; background: rgba(91,140,62,0.1); }
-
-  .sk-dex-counter {
-    text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: #8a8474;
-    font-weight: 500; letter-spacing: 1px;
-  }
-  .sk-dex-counter span:first-child { color: #7DB356; font-weight: 700; }
-
   @media (max-width: 480px) {
-    .sk-dex-viewport { width: 280px; height: 420px; }
-    .sk-dex { gap: 0.75rem; min-height: 460px; }
-    .sk-dex-nav { width: 40px; height: 40px; }
+    .sk-dex-card { min-width: 220px; max-width: 220px; height: 390px; }
+    .sk-dex-track { width: 220px; }
+    .sk-dex-arrow { width: 36px; height: 36px; }
+    .sk-dex-name { font-size: 1.1rem; }
   }
 
   /* STATS */
-  .sk-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 4rem; }
+  .sk-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2.5rem; }
   .sk-stat-card {
-    background: #1a1f1c; border: 1px solid #2a302c; border-radius: 12px;
-    padding: 2rem 1.5rem; text-align: center; transition: border-color 0.3s, transform 0.3s;
+    background: linear-gradient(160deg, #1a1f1c 0%, #151a17 100%);
+    border: 1px solid #2a302c; border-radius: 12px;
+    padding: 1.5rem 1.25rem; text-align: center;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
   }
-  .sk-stat-card:hover { border-color: #3d5c2e; transform: translateY(-2px); }
-  .sk-stat-icon { color: #5B8C3E; margin-bottom: 1rem; }
-  .sk-stat-num { font-family: 'Playfair Display', serif; font-size: 2.75rem; font-weight: 700; margin-bottom: 0.25rem; }
-  .sk-stat-label { color: #8a8474; font-size: 0.85rem; font-weight: 400; text-transform: uppercase; letter-spacing: 1px; }
+  .sk-stat-card:hover { border-color: #3d5c2e; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+  .sk-stat-featured { grid-column: span 2; }
+  .sk-stat-featured .sk-stat-num { font-size: 3.5rem; }
+  .sk-stat-icon { color: #5B8C3E; margin-bottom: 0.6rem; }
+  .sk-stat-num { font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 700; margin-bottom: 0.15rem; }
+  .sk-stat-label { color: #a09882; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.35rem; }
+  .sk-stat-sub { font-size: 0.72rem; color: #5B8C3E; font-weight: 400; letter-spacing: 0.3px; }
+
+  .sk-signature {
+    max-width: 600px; margin: 0 auto 3.5rem; text-align: center;
+    padding: 2rem; border-radius: 12px; position: relative;
+    background: linear-gradient(160deg, rgba(196,129,61,0.06) 0%, rgba(26,31,28,0.8) 100%);
+    border: 1px solid rgba(196,129,61,0.25);
+  }
+  .sk-signature-label {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px;
+    color: #C4813D; font-weight: 600; margin-bottom: 0.5rem;
+  }
+  .sk-signature-value {
+    font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700;
+    color: #e8e4dc; margin-bottom: 0.35rem;
+  }
+  .sk-signature-detail { font-size: 0.85rem; color: #a09882; margin-bottom: 0.75rem; }
+  .sk-signature-note {
+    font-size: 0.8rem; color: #8a8474; font-style: italic; line-height: 1.6;
+    max-width: 420px; margin: 0 auto;
+  }
 
   .sk-recent { max-width: 700px; margin: 0 auto; }
   .sk-recent h3 { font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; }
@@ -682,12 +742,15 @@ const iconPaths = [
     .sk-hero h1 { font-size: 2.5rem; }
     .sk-hero-label { font-size: 0.65rem; letter-spacing: 3px; }
     .sk-stats-grid { grid-template-columns: 1fr 1fr; }
+    .sk-stat-featured { grid-column: span 2; }
     .sk-gallery-grid { grid-template-columns: 1fr; }
     .sk-hero-buttons { flex-direction: column; align-items: center; }
     .sk-btn-primary, .sk-btn-outline { width: 100%; text-align: center; }
     .sk-lb-nav { display: none; }
     .sk-stat-num { font-size: 2rem; }
+    .sk-stat-featured .sk-stat-num { font-size: 2.5rem; }
     .sk-container { padding: 0 1.25rem; }
+    .sk-signature-value { font-size: 1.75rem; }
   }
 </style>
 
@@ -719,50 +782,36 @@ const iconPaths = [
       });
     });
 
-    // Field Guide / Dex
+    // Field Guide - single-card carousel (one card visible, no peeking)
+    const dexInner = document.getElementById('dex-track-inner');
+    const dexLeft = document.getElementById('dex-left');
+    const dexRight = document.getElementById('dex-right');
     const dexCards = document.querySelectorAll('.sk-dex-card');
-    const dexCurrent = document.getElementById('dex-current');
-    let dexIdx = 0;
+    const GAP = 20;
+    let dexOffset = 0;
 
-    function showDexCard(idx) {
-      dexCards.forEach((card, i) => {
-        card.classList.remove('active', 'prev');
-        card.classList.remove('flipped');
-        if (i === idx) card.classList.add('active');
-        else if (i < idx) card.classList.add('prev');
-      });
-      dexIdx = idx;
-      if (dexCurrent) dexCurrent.textContent = String(idx + 1);
+    function getCardW() {
+      return window.innerWidth <= 480 ? 220 : 250;
     }
 
-    document.getElementById('dex-prev')?.addEventListener('click', () => {
-      showDexCard((dexIdx - 1 + dexCards.length) % dexCards.length);
-    });
-    document.getElementById('dex-next')?.addEventListener('click', () => {
-      showDexCard((dexIdx + 1) % dexCards.length);
-    });
+    function updateDex() {
+      if (!dexInner) return;
+      const maxOffset = Math.max(dexCards.length - 1, 0);
+      dexOffset = Math.min(dexOffset, maxOffset);
+      dexOffset = Math.max(dexOffset, 0);
+      const shift = dexOffset * (getCardW() + GAP);
+      dexInner.style.transform = 'translateX(-' + shift + 'px)';
+      if (dexLeft) dexLeft.classList.toggle('disabled', dexOffset === 0);
+      if (dexRight) dexRight.classList.toggle('disabled', dexOffset >= maxOffset);
+    }
 
-    dexCards.forEach(card => {
-      card.addEventListener('click', () => {
-        if (card.classList.contains('active')) {
-          card.classList.toggle('flipped');
-        }
-      });
-    });
+    dexLeft?.addEventListener('click', () => { dexOffset--; updateDex(); });
+    dexRight?.addEventListener('click', () => { dexOffset++; updateDex(); });
+    window.addEventListener('resize', () => updateDex());
+    updateDex();
 
-    showDexCard(0);
-
-    // Keyboard nav for dex
-    document.addEventListener('keydown', e => {
-      const lbOpen = document.getElementById('sk-lightbox')?.classList.contains('open');
-      if (lbOpen) return;
-      const dexSection = document.getElementById('field-guide');
-      if (!dexSection) return;
-      const rect = dexSection.getBoundingClientRect();
-      const visible = rect.top < window.innerHeight && rect.bottom > 0;
-      if (!visible) return;
-      if (e.key === 'ArrowLeft') { e.preventDefault(); showDexCard((dexIdx - 1 + dexCards.length) % dexCards.length); }
-      if (e.key === 'ArrowRight') { e.preventDefault(); showDexCard((dexIdx + 1) % dexCards.length); }
+    document.querySelectorAll('.sk-dex-card').forEach(card => {
+      card.addEventListener('click', () => card.classList.toggle('flipped'));
     });
 
     // Lightbox

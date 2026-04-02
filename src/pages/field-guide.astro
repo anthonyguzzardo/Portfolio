@@ -1,0 +1,197 @@
+---
+const fieldGuide = [
+  { id: 1, name: 'Red-tailed Hawk', scientific: 'Buteo jamaicensis', img: 'https://picsum.photos/seed/rthawk/400/500', habitat: 'Open fields, forests', diet: 'Small mammals, birds', wingspan: '45-52 in', weight: '1.5-3.5 lb', status: 'Least Concern', firstSeen: '2024-03-12', location: 'Starved Rock, IL', sightings: 23, rarity: 'common' },
+  { id: 2, name: 'Great Blue Heron', scientific: 'Ardea herodias', img: 'https://picsum.photos/seed/gbheron/400/500', habitat: 'Wetlands, shorelines', diet: 'Fish, amphibians', wingspan: '66-79 in', weight: '4.6-5.5 lb', status: 'Least Concern', firstSeen: '2024-04-08', location: "Chain O' Lakes, IL", sightings: 18, rarity: 'common' },
+  { id: 3, name: 'Bald Eagle', scientific: 'Haliaeetus leucocephalus', img: 'https://picsum.photos/seed/baldeagle/400/500', habitat: 'Near large bodies of water', diet: 'Fish, waterfowl', wingspan: '71-91 in', weight: '6.6-14 lb', status: 'Least Concern', firstSeen: '2024-06-20', location: 'Mississippi River Valley, IA', sightings: 8, rarity: 'uncommon' },
+  { id: 4, name: 'Great Horned Owl', scientific: 'Bubo virginianus', img: 'https://picsum.photos/seed/ghowl/400/500', habitat: 'Forests, swamps, deserts', diet: 'Mammals, birds, reptiles', wingspan: '40-57 in', weight: '2-5.5 lb', status: 'Least Concern', firstSeen: '2025-01-12', location: 'Morton Arboretum, IL', sightings: 5, rarity: 'uncommon' },
+  { id: 5, name: 'Belted Kingfisher', scientific: 'Megaceryle alcyon', img: 'https://picsum.photos/seed/bkingfish/400/500', habitat: 'Streams, rivers, ponds', diet: 'Fish, crayfish', wingspan: '19-23 in', weight: '5-6 oz', status: 'Least Concern', firstSeen: '2025-07-04', location: 'Galena, IL', sightings: 3, rarity: 'uncommon' },
+  { id: 6, name: 'Yellow Warbler', scientific: 'Setophaga petechia', img: 'https://picsum.photos/seed/ywarbler/400/500', habitat: 'Thickets, wetlands', diet: 'Insects, berries', wingspan: '6.3-7.9 in', weight: '0.3-0.4 oz', status: 'Least Concern', firstSeen: '2025-05-10', location: 'Magee Marsh, OH', sightings: 12, rarity: 'common' },
+  { id: 7, name: 'Sandhill Crane', scientific: 'Antigone canadensis', img: 'https://picsum.photos/seed/shcrane/400/500', habitat: 'Marshes, grasslands', diet: 'Seeds, grains, insects', wingspan: '73-90 in', weight: '7.3-11 lb', status: 'Least Concern', firstSeen: '2025-11-01', location: 'Jasper-Pulaski FWA, IN', sightings: 15, rarity: 'common' },
+  { id: 8, name: 'Snowy Owl', scientific: 'Bubo scandiacus', img: 'https://picsum.photos/seed/snowyowl/400/500', habitat: 'Open tundra, fields', diet: 'Lemmings, small mammals', wingspan: '49-59 in', weight: '3.5-6.5 lb', status: 'Vulnerable', firstSeen: '2026-03-20', location: 'Illinois Beach SP, IL', sightings: 1, rarity: 'rare' },
+  { id: 9, name: 'Pileated Woodpecker', scientific: 'Dryocopus pileatus', img: 'https://picsum.photos/seed/pwood/400/500', habitat: 'Mature forests', diet: 'Carpenter ants, beetles', wingspan: '26-30 in', weight: '8.8-12.3 oz', status: 'Least Concern', firstSeen: '2026-03-28', location: 'Starved Rock, IL', sightings: 4, rarity: 'uncommon' },
+  { id: 10, name: 'American Kestrel', scientific: 'Falco sparverius', img: 'https://picsum.photos/seed/akestrel/400/500', habitat: 'Open country, cities', diet: 'Insects, small birds', wingspan: '20-24 in', weight: '2.8-5.8 oz', status: 'Least Concern', firstSeen: '2026-03-25', location: 'Midewin Prairie, IL', sightings: 6, rarity: 'common' },
+  { id: 11, name: 'Northern Cardinal', scientific: 'Cardinalis cardinalis', img: 'https://picsum.photos/seed/ncard/400/500', habitat: 'Woodlands, gardens', diet: 'Seeds, fruits, insects', wingspan: '10-12 in', weight: '1.5-1.7 oz', status: 'Least Concern', firstSeen: '2024-02-14', location: 'Morton Arboretum, IL', sightings: 47, rarity: 'common' },
+  { id: 12, name: "Cooper's Hawk", scientific: 'Accipiter cooperii', img: 'https://picsum.photos/seed/coophawk/400/500', habitat: 'Forests, wooded suburbs', diet: 'Medium-sized birds', wingspan: '24-36 in', weight: '7.8-24 oz', status: 'Least Concern', firstSeen: '2026-03-15', location: 'Waterfall Glen, IL', sightings: 7, rarity: 'uncommon' },
+  { id: 13, name: 'Common Loon', scientific: 'Gavia immer', img: 'https://picsum.photos/seed/cloon/400/500', habitat: 'Lakes, coastal waters', diet: 'Fish', wingspan: '41-52 in', weight: '6.5-12 lb', status: 'Least Concern', firstSeen: '2025-08-15', location: 'Traverse City, MI', sightings: 3, rarity: 'uncommon' },
+  { id: 14, name: 'Eastern Bluebird', scientific: 'Sialia sialis', img: 'https://picsum.photos/seed/eblue/400/500', habitat: 'Open woodlands, farmland', diet: 'Insects, berries', wingspan: '9.8-12.6 in', weight: '0.95-1.2 oz', status: 'Least Concern', firstSeen: '2025-04-22', location: 'Brown County SP, IN', sightings: 9, rarity: 'common' },
+];
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Field Guide | Shakshuka</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <nav class="fg-nav">
+    <a href="/shakshuka" class="fg-back">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to Shakshuka
+    </a>
+  </nav>
+
+  <main class="fg-main">
+    <h1 class="fg-title">Field Guide</h1>
+    <p class="fg-sub">{fieldGuide.length} species catalogued</p>
+
+    <div class="fg-grid">
+      {fieldGuide.map((bird) => (
+        <div class="sk-dex-card" data-rarity={bird.rarity}>
+          <div class="sk-dex-card-inner">
+            <div class="sk-dex-front">
+              <div class="sk-dex-header">
+                <div class="sk-dex-number">Lifer #{String(bird.id).padStart(3, '0')} <span class="sk-dex-of">/ {fieldGuide.length}</span></div>
+                <div class="sk-dex-rarity">{bird.rarity}</div>
+              </div>
+              <div class="sk-dex-img-wrap">
+                <img src={bird.img} alt={bird.name} loading="lazy" />
+              </div>
+              <h3 class="sk-dex-name">{bird.name}</h3>
+              <p class="sk-dex-scientific">{bird.scientific}</p>
+              <div class="sk-dex-quick">
+                <span>{bird.habitat.split(',')[0]}</span>
+                <span>{bird.location.split(',')[0]}</span>
+                <span>{bird.sightings}x seen</span>
+              </div>
+              <div class="sk-dex-flip-hint">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              </div>
+            </div>
+            <div class="sk-dex-back">
+              <div class="sk-dex-number">Lifer #{String(bird.id).padStart(3, '0')}</div>
+              <h3 class="sk-dex-name">{bird.name}</h3>
+              <div class="sk-dex-details">
+                <div class="sk-dex-row"><span class="sk-dex-label">Habitat</span><span>{bird.habitat}</span></div>
+                <div class="sk-dex-row"><span class="sk-dex-label">Diet</span><span>{bird.diet}</span></div>
+                <div class="sk-dex-row"><span class="sk-dex-label">Wingspan</span><span>{bird.wingspan}</span></div>
+                <div class="sk-dex-row"><span class="sk-dex-label">Weight</span><span>{bird.weight}</span></div>
+                <div class="sk-dex-row"><span class="sk-dex-label">Status</span><span class={bird.status === 'Vulnerable' ? 'sk-dex-warn' : ''}>{bird.status}</span></div>
+                <div class="sk-dex-row"><span class="sk-dex-label">First Seen</span><span>{new Date(bird.firstSeen + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></div>
+                <div class="sk-dex-row"><span class="sk-dex-label">Location</span><span>{bird.location}</span></div>
+                <div class="sk-dex-row"><span class="sk-dex-label">Sightings</span><span>{bird.sightings}</span></div>
+              </div>
+              <div class="sk-dex-flip-hint">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </main>
+
+</body>
+</html>
+
+<style is:global>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0f1210; color: #e8e4dc; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; text-decoration: none; }
+  h1, h3 { font-family: 'Playfair Display', Georgia, serif; font-weight: 600; line-height: 1.2; }
+
+  .fg-nav {
+    padding: 1.25rem 2rem; border-bottom: 1px solid #2a302c;
+  }
+  .fg-back {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.85rem; color: #8a8474; transition: color 0.2s;
+  }
+  .fg-back:hover { color: #7DB356; }
+
+  .fg-main {
+    max-width: 1200px; margin: 0 auto; padding: 3rem 2rem 4rem;
+  }
+  .fg-title {
+    font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem;
+  }
+  .fg-sub {
+    text-align: center; color: #8a8474; font-size: 1rem; margin-bottom: 2.5rem;
+  }
+  .fg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.25rem;
+    justify-items: center;
+  }
+
+  /* Card styles (shared with main page) */
+  .sk-dex-card {
+    width: 250px; height: 420px;
+    perspective: 900px; cursor: pointer;
+  }
+  .sk-dex-card-inner {
+    width: 100%; height: 100%; position: relative;
+    transition: transform 0.6s ease; transform-style: preserve-3d;
+  }
+  .sk-dex-card.flipped .sk-dex-card-inner { transform: rotateY(180deg); }
+  .sk-dex-front, .sk-dex-back {
+    position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column;
+    border: 2px solid #2a302c; overflow: hidden;
+  }
+  .sk-dex-back { transform: rotateY(180deg); }
+
+  .sk-dex-card[data-rarity="common"] .sk-dex-front,
+  .sk-dex-card[data-rarity="common"] .sk-dex-back {
+    background: linear-gradient(160deg, #1a1f1c 0%, #141914 100%); border-color: #3d5c2e;
+  }
+  .sk-dex-card[data-rarity="uncommon"] .sk-dex-front,
+  .sk-dex-card[data-rarity="uncommon"] .sk-dex-back {
+    background: linear-gradient(160deg, #1c211a 0%, #161b14 100%); border-color: #5B8C3E;
+    box-shadow: 0 0 25px rgba(91,140,62,0.12), inset 0 1px 0 rgba(91,140,62,0.08);
+  }
+  .sk-dex-card[data-rarity="rare"] .sk-dex-front,
+  .sk-dex-card[data-rarity="rare"] .sk-dex-back {
+    background: linear-gradient(160deg, #211d18 0%, #1a1610 100%); border-color: #C4813D;
+    box-shadow: 0 0 30px rgba(196,129,61,0.2), inset 0 1px 0 rgba(196,129,61,0.1);
+  }
+
+  .sk-dex-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
+  .sk-dex-number { font-family: 'Inter', monospace; font-size: 0.7rem; font-weight: 600; color: #5B8C3E; letter-spacing: 0.5px; }
+  .sk-dex-of { color: #555; font-weight: 400; }
+  .sk-dex-rarity { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; padding: 0.15rem 0.55rem; border-radius: 100px; }
+  [data-rarity="common"] .sk-dex-rarity { color: #5B8C3E; background: rgba(91,140,62,0.12); }
+  [data-rarity="uncommon"] .sk-dex-rarity { color: #7DB356; background: rgba(91,140,62,0.18); }
+  [data-rarity="rare"] .sk-dex-rarity { color: #C4813D; background: rgba(196,129,61,0.18); }
+
+  .sk-dex-img-wrap { flex: 1; margin: 0.5rem 0; border-radius: 8px; overflow: hidden; background: #0f1210; min-height: 0; }
+  .sk-dex-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+  .sk-dex-card-inner:hover .sk-dex-img-wrap img { transform: scale(1.05); }
+
+  .sk-dex-name { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.1rem; }
+  .sk-dex-scientific { font-size: 0.75rem; color: #7DB356; font-style: italic; margin-bottom: 0.4rem; }
+  .sk-dex-quick { display: flex; justify-content: space-between; font-size: 0.7rem; color: #a09882; letter-spacing: 0.2px; }
+  .sk-dex-flip-hint { text-align: center; margin-top: auto; padding-top: 0.4rem; color: #444; transition: color 0.2s; }
+  .sk-dex-card-inner:hover .sk-dex-flip-hint { color: #7DB356; }
+
+  .sk-dex-back .sk-dex-number { margin-bottom: 0.15rem; }
+  .sk-dex-back .sk-dex-name { margin-bottom: 0.75rem; }
+  .sk-dex-details { flex: 1; display: flex; flex-direction: column; gap: 0.45rem; }
+  .sk-dex-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.78rem; padding-bottom: 0.4rem; border-bottom: 1px solid #2a302c; }
+  .sk-dex-row:last-child { border-bottom: none; }
+  .sk-dex-label { color: #8a8474; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .sk-dex-warn { color: #C4813D; font-weight: 600; }
+
+  @media (max-width: 480px) {
+    .fg-title { font-size: 2rem; }
+    .fg-grid { grid-template-columns: 1fr; }
+    .sk-dex-card { width: 100%; max-width: 300px; }
+  }
+</style>
+
+<script>
+  document.querySelectorAll('.sk-dex-card').forEach(card => {
+    card.addEventListener('click', () => card.classList.toggle('flipped'));
+  });
+</script>
