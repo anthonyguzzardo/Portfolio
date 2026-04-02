@@ -1,0 +1,849 @@
+---
+import OpsLayout from '../../layouts/OpsLayout.astro';
+---
+
+<OpsLayout title="Geo Intel | Dealifier Ops" active="geo">
+  <div class="ops-sticky-header">
+    <h1 class="ops-title">Geographic Intelligence</h1>
+  </div>
+
+  <!-- Summary KPIs -->
+  <div class="geo-kpis">
+    <div class="geo-kpi">
+      <div class="geo-kpi-value" id="geo-counties-active">--</div>
+      <div class="geo-kpi-label">Counties with Retailers</div>
+    </div>
+    <div class="geo-kpi">
+      <div class="geo-kpi-value" id="geo-counties-total">100</div>
+      <div class="geo-kpi-label">Total NC Counties</div>
+    </div>
+    <div class="geo-kpi">
+      <div class="geo-kpi-value" id="geo-zips-active">--</div>
+      <div class="geo-kpi-label">Service Area Zips</div>
+    </div>
+    <div class="geo-kpi">
+      <div class="geo-kpi-value" id="geo-zips-retailers">--</div>
+      <div class="geo-kpi-label">Zips with Retailers</div>
+    </div>
+  </div>
+
+  <!-- Map Legend + Metric Toggle -->
+  <div class="map-controls">
+    <span class="map-control-label">Color by:</span>
+    <button class="map-chip active" data-metric="retailers">Retailers</button>
+    <button class="map-chip" data-metric="revenue">Revenue</button>
+    <button class="map-chip" data-metric="transactions">Transactions</button>
+  </div>
+
+  <!-- County Grid Map -->
+  <div class="county-map" id="county-map">
+    <div class="loading-cell">Loading county data...</div>
+  </div>
+
+  <!-- Floating hover tooltip -->
+  <div id="map-tooltip" class="map-tooltip" style="display: none;">
+    <div class="tooltip-name" id="tt-name">--</div>
+    <div class="tooltip-stats">
+      <div class="tooltip-stat"><span class="tooltip-label">Retailers</span><span class="tooltip-val" id="tt-retailers">0</span></div>
+      <div class="tooltip-stat"><span class="tooltip-label">Revenue</span><span class="tooltip-val" id="tt-revenue">$0</span></div>
+      <div class="tooltip-stat"><span class="tooltip-label">Transactions</span><span class="tooltip-val" id="tt-txns">0</span></div>
+      <div class="tooltip-stat"><span class="tooltip-label">Active Deals</span><span class="tooltip-val" id="tt-deals">0</span></div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="map-legend">
+    <span class="legend-label">Density:</span>
+    <div class="legend-bar">
+      <span class="legend-min">0</span>
+      <div class="legend-gradient"></div>
+      <span class="legend-max" id="legend-max">--</span>
+    </div>
+  </div>
+
+  <!-- County Detail (shown on click) -->
+  <div id="county-detail" class="county-detail" style="display: none;">
+    <div class="county-detail-header">
+      <h2 class="county-detail-name" id="cd-name">--</h2>
+      <button class="county-detail-close" id="cd-close">X</button>
+    </div>
+    <div class="county-detail-grid">
+      <div class="cd-item">
+        <div class="cd-label">Retailers</div>
+        <div class="cd-value" id="cd-retailers">--</div>
+      </div>
+      <div class="cd-item">
+        <div class="cd-label">Active Deals</div>
+        <div class="cd-value" id="cd-deals">--</div>
+      </div>
+      <div class="cd-item">
+        <div class="cd-label">Transactions</div>
+        <div class="cd-value" id="cd-transactions">--</div>
+      </div>
+      <div class="cd-item">
+        <div class="cd-label">Revenue</div>
+        <div class="cd-value" id="cd-revenue">--</div>
+      </div>
+      <div class="cd-item">
+        <div class="cd-label">Stripe Connected</div>
+        <div class="cd-value" id="cd-stripe">--</div>
+      </div>
+      <div class="cd-item">
+        <div class="cd-label">Tax Rate</div>
+        <div class="cd-value" id="cd-tax">--</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Counties Tables -->
+  <div class="geo-tables">
+    <div class="geo-table-panel">
+      <h2 class="section-title">Top Counties by Retailer Count</h2>
+      <div class="table-wrapper">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th scope="col">County</th>
+              <th scope="col">Retailers</th>
+              <th scope="col">Deals</th>
+              <th scope="col">Revenue</th>
+              <th scope="col">Tax Rate</th>
+            </tr>
+          </thead>
+          <tbody id="top-counties-tbody">
+            <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="geo-table-panel">
+      <h2 class="section-title">Unserved Counties (Expansion Opportunities)</h2>
+      <div class="table-wrapper">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th scope="col">County</th>
+              <th scope="col">Tax Rate</th>
+              <th scope="col">Consumer Signups</th>
+            </tr>
+          </thead>
+          <tbody id="unserved-tbody">
+            <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zip Code Grid -->
+  <h2 class="section-title">Service Area Zip Codes</h2>
+  <div class="zip-toolbar">
+    <input type="text" id="zip-search" placeholder="Search by zip, city, or county..." class="search-input" />
+  </div>
+  <div class="table-wrapper">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th scope="col">Zip</th>
+          <th scope="col">City</th>
+          <th scope="col">County</th>
+          <th scope="col">State</th>
+          <th scope="col">Retailers</th>
+          <th scope="col">Demand</th>
+        </tr>
+      </thead>
+      <tbody id="zip-tbody">
+        <tr><td colspan="6" class="loading-cell">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</OpsLayout>
+
+<script>
+  let countyData: any[] = [];
+  let currentMetric = 'retailers';
+
+  function fmtMoney(val: number): string {
+    return `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  function escapeHtml(str: string): string {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function getMetricValue(county: any, metric: string): number {
+    switch (metric) {
+      case 'retailers': return county.retailer_count || 0;
+      case 'revenue': return county.revenue || 0;
+      case 'transactions': return county.transaction_count || 0;
+      default: return 0;
+    }
+  }
+
+  let svgLoaded = false;
+
+  async function loadSvgMap(container: HTMLElement) {
+    if (svgLoaded) return;
+    try {
+      const res = await fetch('/assets/nc-counties-map.svg');
+      if (!res.ok) throw new Error('SVG not found');
+      const svgText = await res.text();
+      container.innerHTML = `<div class="svg-map-wrap">${svgText}</div>`;
+      svgLoaded = true;
+    } catch {
+      // Fallback to grid if SVG unavailable
+      svgLoaded = false;
+    }
+  }
+
+  function renderCountyMap(data: any[], metric: string) {
+    countyData = data;
+    const container = document.getElementById('county-map')!;
+    const maxVal = Math.max(...data.map(d => getMetricValue(d, metric)), 1);
+
+    // Update legend
+    const legendMax = document.getElementById('legend-max');
+    if (legendMax) {
+      legendMax.textContent = metric === 'revenue' ? fmtMoney(maxVal) : maxVal.toString();
+    }
+
+    // Build data lookup
+    const dataMap: Record<string, any> = {};
+    data.forEach(c => { dataMap[c.county_name] = c; });
+
+    // If SVG map is loaded, color the paths
+    const svgEl = container.querySelector('svg');
+    if (svgEl) {
+      svgEl.querySelectorAll('.county-path').forEach(path => {
+        const countyName = (path as SVGElement).dataset.county;
+        if (!countyName) return;
+        const county = dataMap[countyName];
+        const val = county ? getMetricValue(county, metric) : 0;
+        const intensity = maxVal > 0 ? val / maxVal : 0;
+
+        // Color: dark bg base, red intensity for data
+        if (val > 0) {
+          const r = 196, g = 34, b = 36;
+          const opacity = Math.max(intensity * 0.85, 0.15);
+          (path as SVGElement).style.fill = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+        } else {
+          (path as SVGElement).style.fill = 'rgba(255, 255, 255, 0.06)';
+        }
+
+        // Remove native <title> tooltip (replaced by floating card)
+        const existingTitle = path.querySelector('title');
+        if (existingTitle) existingTitle.remove();
+      });
+
+      // Bind hover + click handlers on SVG paths
+      const tooltipEl = document.getElementById('map-tooltip')!;
+      svgEl.querySelectorAll('.county-path').forEach(path => {
+        path.addEventListener('mouseenter', () => {
+          const name = (path as SVGElement).dataset.county || '';
+          const county = dataMap[name];
+          const ttName = document.getElementById('tt-name');
+          const ttRetailers = document.getElementById('tt-retailers');
+          const ttRevenue = document.getElementById('tt-revenue');
+          const ttTxns = document.getElementById('tt-txns');
+          const ttDeals = document.getElementById('tt-deals');
+          if (ttName) ttName.textContent = name + ' County';
+          if (ttRetailers) ttRetailers.textContent = (county?.retailer_count || 0).toString();
+          if (ttRevenue) ttRevenue.textContent = fmtMoney(county?.revenue || 0);
+          if (ttTxns) ttTxns.textContent = (county?.transaction_count || 0).toString();
+          if (ttDeals) ttDeals.textContent = (county?.active_deals || 0).toString();
+          tooltipEl.style.display = 'block';
+          // Scale up county on hover
+          (path as SVGElement).style.transform = 'scale(1.03)';
+          (path as SVGElement).style.transformOrigin = 'center';
+          (path as SVGElement).style.filter = 'brightness(1.4) drop-shadow(0 0 6px rgba(196, 34, 36, 0.5))';
+        });
+
+        path.addEventListener('mousemove', (e: Event) => {
+          const me = e as MouseEvent;
+          const offset = 16;
+          let x = me.clientX + offset;
+          let y = me.clientY + offset;
+          // Keep tooltip on screen
+          const tw = tooltipEl.offsetWidth;
+          const th = tooltipEl.offsetHeight;
+          if (x + tw > window.innerWidth - 8) x = me.clientX - tw - offset;
+          if (y + th > window.innerHeight - 8) y = me.clientY - th - offset;
+          tooltipEl.style.left = x + 'px';
+          tooltipEl.style.top = y + 'px';
+        });
+
+        path.addEventListener('mouseleave', () => {
+          tooltipEl.style.display = 'none';
+          (path as SVGElement).style.transform = '';
+          (path as SVGElement).style.filter = '';
+        });
+
+        path.addEventListener('click', () => {
+          const name = (path as SVGElement).dataset.county;
+          const county = dataMap[name || ''];
+          if (county) showCountyDetail(county);
+        });
+      });
+      return;
+    }
+
+    // Fallback: grid layout if SVG not loaded
+    const sorted = [...data].sort((a, b) =>
+      (a.county_name || '').localeCompare(b.county_name || '')
+    );
+
+    container.innerHTML = `<div class="county-grid">${sorted.map(c => {
+      const val = getMetricValue(c, metric);
+      const intensity = maxVal > 0 ? val / maxVal : 0;
+      const opacity = val > 0 ? Math.max(intensity * 0.85, 0.12) : 0.03;
+      const hasData = val > 0;
+      return `
+        <div class="county-cell ${hasData ? 'county-active' : ''}"
+             data-county="${escapeHtml(c.county_name)}"
+             style="background-color: rgba(196, 34, 36, ${opacity.toFixed(2)})"
+             title="${c.county_name}: ${metric === 'revenue' ? fmtMoney(val) : val}">
+          <span class="county-name-label">${escapeHtml(c.county_name)}</span>
+          ${hasData ? `<span class="county-val">${metric === 'revenue' ? '$' + Math.round(val) : val}</span>` : ''}
+        </div>
+      `;
+    }).join('')}</div>`;
+
+    container.querySelectorAll('.county-cell').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const name = (cell as HTMLElement).dataset.county;
+        const county = data.find(c => c.county_name === name);
+        if (county) showCountyDetail(county);
+      });
+    });
+  }
+
+  function showCountyDetail(c: any) {
+    const detail = document.getElementById('county-detail')!;
+    detail.style.display = 'block';
+
+    const setEl = (id: string, val: string) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    setEl('cd-name', c.county_name + ' County');
+    setEl('cd-retailers', (c.retailer_count || 0).toString());
+    setEl('cd-deals', (c.active_deals || 0).toString());
+    setEl('cd-transactions', (c.transaction_count || 0).toString());
+    setEl('cd-revenue', fmtMoney(c.revenue || 0));
+    setEl('cd-stripe', (c.stripe_connected || 0).toString());
+    setEl('cd-tax', `${(Number(c.combined_rate || 0) * 100).toFixed(2)}%`);
+
+    detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  async function init() {
+    const key = localStorage.getItem('dealifier_ops_key');
+    if (!key) return;
+    const headers = { 'x-admin-key': key };
+
+    // Load SVG map first, then data
+    const container = document.getElementById('county-map')!;
+    await loadSvgMap(container);
+
+    // Load geo data
+    const [geoRes, summaryRes, zipRes] = await Promise.all([
+      fetch('/api/ops-geo?view=county', { headers }),
+      fetch('/api/ops-geo?view=summary', { headers }),
+      fetch('/api/ops-geo?view=zipcode', { headers }),
+    ]);
+
+    // Summary KPIs
+    if (summaryRes.ok) {
+      const summary = await summaryRes.json();
+      const setEl = (id: string, val: string) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+      };
+      setEl('geo-counties-active', (summary.counties_with_retailers || 0).toString());
+      setEl('geo-counties-total', (summary.total_counties || 100).toString());
+      setEl('geo-zips-active', (summary.service_area_zips || 0).toString());
+      setEl('geo-zips-retailers', (summary.zips_with_retailers || 0).toString());
+    }
+
+    // County map
+    if (geoRes.ok) {
+      const data = await geoRes.json();
+      renderCountyMap(data, currentMetric);
+
+      // Top counties table
+      const topTbody = document.getElementById('top-counties-tbody')!;
+      const sorted = [...data].sort((a: any, b: any) => (b.retailer_count || 0) - (a.retailer_count || 0));
+      const top = sorted.filter((c: any) => c.retailer_count > 0);
+      if (top.length === 0) {
+        topTbody.innerHTML = '<tr><td colspan="5" class="loading-cell">No counties with retailers yet</td></tr>';
+      } else {
+        topTbody.innerHTML = top.slice(0, 15).map((c: any) => `
+          <tr class="clickable-row" data-county="${escapeHtml(c.county_name)}">
+            <td><strong>${escapeHtml(c.county_name)}</strong></td>
+            <td>${c.retailer_count}</td>
+            <td>${c.active_deals || 0}</td>
+            <td>${fmtMoney(c.revenue || 0)}</td>
+            <td>${(Number(c.combined_rate || 0) * 100).toFixed(2)}%</td>
+          </tr>
+        `).join('');
+      }
+
+      // Unserved counties
+      const unservedTbody = document.getElementById('unserved-tbody')!;
+      const unserved = sorted.filter((c: any) => !c.retailer_count || c.retailer_count === 0);
+      if (unserved.length === 0) {
+        unservedTbody.innerHTML = '<tr><td colspan="3" class="loading-cell">All counties have retailers</td></tr>';
+      } else {
+        unservedTbody.innerHTML = unserved.slice(0, 20).map((c: any) => `
+          <tr>
+            <td>${escapeHtml(c.county_name)}</td>
+            <td>${(Number(c.combined_rate || 0) * 100).toFixed(2)}%</td>
+            <td>${c.consumer_signups || 0}</td>
+          </tr>
+        `).join('');
+      }
+
+      // Metric toggle
+      document.querySelectorAll('.map-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const metric = (chip as HTMLElement).dataset.metric!;
+          currentMetric = metric;
+          document.querySelectorAll('.map-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          renderCountyMap(data, metric);
+        });
+      });
+    }
+
+    // Zip code grid
+    if (zipRes.ok) {
+      const zips = await zipRes.json();
+      const zipTbody = document.getElementById('zip-tbody')!;
+      if (zips.length === 0) {
+        zipTbody.innerHTML = '<tr><td colspan="6" class="loading-cell">No service area zips configured</td></tr>';
+      } else {
+        zipTbody.innerHTML = zips.map((z: any) => {
+          const demand = z.has_demand
+            ? '<span class="demand-hot">HIGH DEMAND</span>'
+            : z.retailer_count > 0
+              ? '<span class="demand-served">Served</span>'
+              : '<span class="demand-none">--</span>';
+          return `
+            <tr>
+              <td><strong>${escapeHtml(z.zipcode || '--')}</strong></td>
+              <td>${escapeHtml(z.city || '--')}</td>
+              <td>${escapeHtml(z.county || '--')}</td>
+              <td>${escapeHtml(z.state_code || 'NC')}</td>
+              <td>${z.retailer_count || 0}</td>
+              <td>${demand}</td>
+            </tr>
+          `;
+        }).join('');
+
+        // Zip search
+        const zipSearch = document.getElementById('zip-search') as HTMLInputElement;
+        if (zipSearch) {
+          zipSearch.addEventListener('input', () => {
+            const q = zipSearch.value.toLowerCase();
+            zipTbody.querySelectorAll('tr').forEach(row => {
+              const text = row.textContent?.toLowerCase() || '';
+              (row as HTMLElement).style.display = text.includes(q) ? '' : 'none';
+            });
+          });
+        }
+      }
+    }
+
+    // Close detail panel
+    document.getElementById('cd-close')?.addEventListener('click', () => {
+      document.getElementById('county-detail')!.style.display = 'none';
+    });
+  }
+
+  window.addEventListener('ops-authed', init);
+  if (localStorage.getItem('dealifier_ops_key')) init();
+</script>
+
+<style is:global>
+  .ops-title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-black);
+    margin: 0 0 var(--space-8) 0;
+  }
+
+  .section-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    margin: var(--space-8) 0 var(--space-4) 0;
+  }
+
+  /* KPIs */
+  .geo-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+  }
+
+  .geo-kpi {
+    background-color: var(--color-surface);
+    border: var(--border-width-thick) solid var(--color-text-faint);
+    padding: var(--space-5);
+    text-align: center;
+  }
+
+  .geo-kpi-value {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-black);
+    color: var(--brand-red);
+    line-height: var(--line-height-tight);
+    margin-bottom: var(--space-1);
+  }
+
+  .geo-kpi-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-soft);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+  }
+
+  /* Map controls */
+  .map-controls {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    margin-bottom: var(--space-4);
+  }
+
+  .map-control-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    color: var(--color-text-faint);
+    margin-right: var(--space-1);
+  }
+
+  .map-chip {
+    padding: var(--space-2) var(--space-3);
+    font-family: var(--font-family);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    background: none;
+    color: var(--color-text-faint);
+    border: 1px solid var(--color-text-faint);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .map-chip:hover { color: var(--color-text); border-color: var(--color-text-soft); }
+
+  .map-chip.active {
+    color: var(--brand-red);
+    border-color: var(--brand-red);
+    background-color: rgba(196, 34, 36, 0.08);
+  }
+
+  /* SVG map */
+  .svg-map-wrap {
+    border: 1px solid var(--color-text-faint);
+    background-color: var(--color-surface);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+
+  .svg-map-wrap svg {
+    width: 100%;
+    height: auto;
+    max-height: 450px;
+  }
+
+  .svg-map-wrap .county-path {
+    stroke: rgba(255, 255, 255, 0.15);
+    stroke-width: 0.5;
+    cursor: pointer;
+    transition: fill 0.2s ease, stroke 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+  }
+
+  .svg-map-wrap .county-path:hover {
+    stroke: var(--brand-red);
+    stroke-width: 1.5;
+  }
+
+  /* Floating tooltip */
+  .map-tooltip {
+    position: fixed;
+    z-index: 1000;
+    pointer-events: none;
+    background-color: var(--color-surface);
+    border: 2px solid var(--brand-red);
+    padding: var(--space-3) var(--space-4);
+    min-width: 180px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    animation: tooltip-in 0.15s ease forwards;
+  }
+
+  @keyframes tooltip-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .tooltip-name {
+    font-weight: var(--font-weight-black);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-2);
+    color: var(--color-text);
+  }
+
+  .tooltip-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-1) var(--space-4);
+  }
+
+  .tooltip-stat {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .tooltip-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-soft);
+  }
+
+  .tooltip-val {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    color: var(--brand-red);
+  }
+
+  /* County grid map (fallback) */
+  .county-map {
+    margin-bottom: var(--space-4);
+  }
+
+  .county-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 2px;
+  }
+
+  .county-cell {
+    padding: var(--space-2);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+    min-height: 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .county-cell:hover {
+    border-color: var(--brand-red);
+    transform: scale(1.05);
+    z-index: 2;
+    position: relative;
+  }
+
+  .county-active:hover {
+    box-shadow: 0 0 12px rgba(196, 34, 36, 0.3);
+  }
+
+  .county-name-label {
+    font-size: 9px;
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-soft);
+    line-height: 1.1;
+  }
+
+  .county-val {
+    font-size: 11px;
+    font-weight: var(--font-weight-black);
+    color: var(--color-text);
+    margin-top: 2px;
+  }
+
+  /* Legend */
+  .map-legend {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-8);
+  }
+
+  .legend-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+  }
+
+  .legend-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .legend-min, .legend-max {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+  }
+
+  .legend-gradient {
+    width: 120px;
+    height: 10px;
+    background: linear-gradient(to right, rgba(196, 34, 36, 0.05), rgba(196, 34, 36, 0.85));
+    border: 1px solid var(--color-text-faint);
+  }
+
+  /* County detail */
+  .county-detail {
+    background-color: var(--color-surface);
+    border: var(--border-width-thick) solid var(--brand-red);
+    padding: var(--space-6);
+    margin-bottom: var(--space-8);
+  }
+
+  .county-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+  }
+
+  .county-detail-name {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-black);
+    margin: 0;
+  }
+
+  .county-detail-close {
+    background: none;
+    border: 1px solid var(--color-text-faint);
+    color: var(--color-text-faint);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-xs);
+  }
+
+  .county-detail-close:hover { color: var(--brand-red); border-color: var(--brand-red); }
+
+  .county-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-4);
+  }
+
+  .cd-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    margin-bottom: var(--space-1);
+  }
+
+  .cd-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-black);
+    color: var(--brand-red);
+  }
+
+  /* Tables */
+  .geo-tables {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-6);
+  }
+
+  @media (max-width: 900px) {
+    .geo-tables { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    .map-controls {
+      flex-wrap: wrap;
+    }
+  }
+
+  .table-wrapper { overflow-x: auto; margin-bottom: var(--space-4); }
+
+  .ops-table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
+
+  .ops-table th, .ops-table td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    border-bottom: 1px solid var(--color-text-faint);
+    white-space: nowrap;
+  }
+
+  .ops-table th {
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-soft);
+  }
+
+  .loading-cell { text-align: center; color: var(--color-text-soft); }
+
+  .clickable-row { cursor: pointer; transition: background-color 0.15s ease; }
+  .clickable-row:hover { background-color: rgba(196, 34, 36, 0.08); }
+
+  /* Demand badges */
+  .demand-hot {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    color: var(--brand-red);
+    border: 1px solid var(--brand-red);
+    padding: 2px 6px;
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+  }
+
+  .demand-served {
+    font-size: var(--font-size-xs);
+    color: #22c55e;
+  }
+
+  .demand-none {
+    color: var(--color-text-faint);
+  }
+
+  /* Zip search */
+  .zip-toolbar {
+    margin-bottom: var(--space-4);
+  }
+
+  .search-input {
+    width: 100%;
+    max-width: 300px;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family);
+    background-color: var(--color-surface);
+    border: var(--border-width-thick) solid var(--color-text-faint);
+    color: var(--color-text);
+  }
+
+  .search-input:focus { outline: none; border-color: var(--brand-red); }
+  .search-input::placeholder { color: var(--color-text-faint); }
+</style>
