@@ -134,9 +134,6 @@ const iconPaths = [
     </button>
     <div class="sk-perch-inner">
       <div class="sk-wordmark-area">
-        <div class="sk-shadow-layer" id="sk-shadow-layer" aria-hidden="true">
-          <span class="sk-shadow-letter">S</span><span class="sk-shadow-letter">h</span><span class="sk-shadow-letter">a</span><span class="sk-shadow-letter">k</span><span class="sk-shadow-letter">s</span><span class="sk-shadow-letter">h</span><span class="sk-shadow-letter">u</span><span class="sk-shadow-letter">k</span><span class="sk-shadow-letter">a</span>
-        </div>
         <h1 class="sk-wordmark" id="sk-wordmark">
           <span class="sk-letter sk-letter-S">S</span><span class="sk-letter sk-letter-h1">h</span><span class="sk-letter sk-letter-a1">a</span><span class="sk-letter sk-letter-k1">k</span><span class="sk-letter sk-letter-s">s</span><span class="sk-letter sk-letter-h2">h</span><span class="sk-letter sk-letter-u">u</span><span class="sk-letter sk-letter-k2">k</span><span class="sk-letter sk-letter-a2">a</span>
         </h1>
@@ -522,19 +519,6 @@ const iconPaths = [
     position: relative; display: flex; flex-direction: column; align-items: center;
   }
 
-  /* Shadow layer — clipped to binocular shape by JS */
-  .sk-shadow-layer {
-    position: absolute; top: 0; left: 0; right: 0;
-    font-family: 'Playfair Display', Georgia, serif;
-    font-size: clamp(3rem, 14vw, 7rem);
-    font-weight: 700; letter-spacing: -0.02em; line-height: 1;
-    text-align: center; z-index: 1; pointer-events: none;
-    clip-path: circle(0px at 0px 0px); opacity: 0;
-  }
-  .sk-shadow-layer.active { opacity: 1; }
-  .sk-shadow-letter { display: inline-block; color: rgba(0, 0, 0, 0.85); }
-  body.sk-light .sk-shadow-letter { color: rgba(0, 0, 0, 0.5); }
-
   /* Wordmark */
   .sk-wordmark {
     font-family: 'Playfair Display', Georgia, serif;
@@ -546,7 +530,8 @@ const iconPaths = [
 
   .sk-wordmark.settled .sk-letter {
     animation: none !important; opacity: 1 !important;
-    transform: none !important;
+    transform: scale(var(--sk-lens-scale, 1)) !important;
+    transition: transform 0.15s ease-out;
   }
 
   .sk-letter {
@@ -554,22 +539,21 @@ const iconPaths = [
     transform-origin: center bottom;
   }
 
-  /* Binocular beam — two overlapping circles */
-  .sk-bino-beam {
+  /* Lens beam — subtle circle overlay following cursor */
+  .sk-lens-beam {
     position: fixed; top: 0; left: 0;
     pointer-events: none; z-index: 3;
     opacity: 0; transition: opacity 300ms ease;
-    will-change: transform;
   }
-  .sk-bino-beam.visible { opacity: 1; }
-  .sk-bino-circle {
+  .sk-lens-beam.visible { opacity: 1; }
+  .sk-lens-circle {
     position: absolute; border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.1) 85%, transparent 100%);
-    mix-blend-mode: screen;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
   }
-  body.sk-light .sk-bino-circle {
-    background: radial-gradient(circle, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.05) 85%, transparent 100%);
-    mix-blend-mode: multiply;
+  body.sk-light .sk-lens-circle {
+    border-color: rgba(0,0,0,0.06);
+    background: radial-gradient(circle, rgba(0,0,0,0.02) 0%, transparent 70%);
   }
 
   /* ============================================
@@ -827,7 +811,7 @@ const iconPaths = [
       animation: none !important; opacity: 1 !important; transform: none !important;
     }
     .sk-perch-tagline, .sk-perch-nav, .sk-perch-mode { animation: none; opacity: 1; }
-    .sk-shadow-layer { display: none !important; }
+    .sk-lens-beam { display: none !important; }
   }
 
   .sk-btn-primary {
@@ -1264,20 +1248,16 @@ const iconPaths = [
       a.addEventListener('click', () => document.getElementById('sk-nav-links').classList.remove('open'));
     });
 
-    // ===== THE PERCH: Binocular Spotlight & Shadows =====
+    // ===== THE PERCH: Lens Magnify & Replay =====
     var skWordmark = document.getElementById('sk-wordmark');
-    var skShadowLayer = document.getElementById('sk-shadow-layer');
 
-    if (skWordmark && skShadowLayer) {
+    if (skWordmark) {
       var skLetters = skWordmark.querySelectorAll('.sk-letter');
-      var skShadowLetters = skShadowLayer.querySelectorAll('.sk-shadow-letter');
       var perchSettled = false;
       var perchSettleTimer = null;
 
-      var BINO_RADIUS = 90;
-      var BINO_SEP = 60;
-      var SHADOW_MAX = 18;
-      var SK_EPSILON = 0.01;
+      var LENS_RADIUS = 120;
+      var MAX_SCALE = 1.35;
 
       function schedulePerchSettle() {
         if (perchSettleTimer) clearTimeout(perchSettleTimer);
@@ -1288,123 +1268,83 @@ const iconPaths = [
       }
       schedulePerchSettle();
 
-      // Create SVG clipPath for binoculars (two-circle union)
       var isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-      var binoSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      binoSvg.setAttribute('width', '0');
-      binoSvg.setAttribute('height', '0');
-      binoSvg.style.position = 'absolute';
-      binoSvg.innerHTML = '<defs><clipPath id="sk-bino-clip" clipPathUnits="userSpaceOnUse"><circle id="sk-bino-l" cx="0" cy="0" r="' + BINO_RADIUS + '"/><circle id="sk-bino-r" cx="0" cy="0" r="' + BINO_RADIUS + '"/></clipPath></defs>';
 
-      if (!isTouchDevice) {
-        document.body.appendChild(binoSvg);
-        skShadowLayer.style.clipPath = 'url(#sk-bino-clip)';
-      }
+      // Visual lens circle overlay
+      var lensBeam = document.createElement('div');
+      lensBeam.classList.add('sk-lens-beam');
+      var lensCircle = document.createElement('div');
+      lensCircle.classList.add('sk-lens-circle');
+      lensCircle.style.width = (LENS_RADIUS * 2) + 'px';
+      lensCircle.style.height = (LENS_RADIUS * 2) + 'px';
+      lensBeam.appendChild(lensCircle);
+      if (!isTouchDevice) document.body.appendChild(lensBeam);
 
-      var binoL = document.getElementById('sk-bino-l');
-      var binoR = document.getElementById('sk-bino-r');
+      var lensVisible = false;
 
-      // Visual binocular beam overlay (two blended circles)
-      var binoBeam = document.createElement('div');
-      binoBeam.classList.add('sk-bino-beam');
-      var circleL = document.createElement('div');
-      circleL.classList.add('sk-bino-circle');
-      circleL.style.width = (BINO_RADIUS * 2) + 'px';
-      circleL.style.height = (BINO_RADIUS * 2) + 'px';
-      var circleR = document.createElement('div');
-      circleR.classList.add('sk-bino-circle');
-      circleR.style.width = (BINO_RADIUS * 2) + 'px';
-      circleR.style.height = (BINO_RADIUS * 2) + 'px';
-      binoBeam.appendChild(circleL);
-      binoBeam.appendChild(circleR);
-      if (!isTouchDevice) document.body.appendChild(binoBeam);
-
-      var binoVisible = false;
-
-      function circleOverlaps(cx, cy, rect) {
-        var closestX = Math.max(rect.left, Math.min(cx, rect.right));
-        var closestY = Math.max(rect.top, Math.min(cy, rect.bottom));
-        return Math.sqrt((cx - closestX) * (cx - closestX) + (cy - closestY) * (cy - closestY)) <= BINO_RADIUS;
+      function resetLetterScales() {
+        skLetters.forEach(function(l) {
+          l.style.setProperty('--sk-lens-scale', '1');
+        });
       }
 
       document.addEventListener('mousemove', function(e) {
         if (isTouchDevice || !perchSettled) return;
         var Px = e.clientX;
         var Py = e.clientY;
-        var lx = Px - BINO_SEP / 2;
-        var rx = Px + BINO_SEP / 2;
 
-        circleL.style.left = (lx - BINO_RADIUS) + 'px';
-        circleL.style.top = (Py - BINO_RADIUS) + 'px';
-        circleR.style.left = (rx - BINO_RADIUS) + 'px';
-        circleR.style.top = (Py - BINO_RADIUS) + 'px';
+        // Position the visual lens circle
+        lensCircle.style.left = (Px - LENS_RADIUS) + 'px';
+        lensCircle.style.top = (Py - LENS_RADIUS) + 'px';
 
+        // Check if lens overlaps the wordmark
         var wRect = skWordmark.getBoundingClientRect();
-        var touching = circleOverlaps(lx, Py, wRect) || circleOverlaps(rx, Py, wRect);
+        var closestX = Math.max(wRect.left, Math.min(Px, wRect.right));
+        var closestY = Math.max(wRect.top, Math.min(Py, wRect.bottom));
+        var touching = Math.sqrt((Px - closestX) * (Px - closestX) + (Py - closestY) * (Py - closestY)) <= LENS_RADIUS;
 
-        if (touching && !binoVisible) {
-          binoBeam.classList.add('visible');
-          skShadowLayer.classList.add('active');
-          binoVisible = true;
-        } else if (!touching && binoVisible) {
-          binoBeam.classList.remove('visible');
-          skShadowLayer.classList.remove('active');
-          binoVisible = false;
+        if (touching && !lensVisible) {
+          lensBeam.classList.add('visible');
+          lensVisible = true;
+        } else if (!touching && lensVisible) {
+          lensBeam.classList.remove('visible');
+          lensVisible = false;
+          resetLetterScales();
         }
 
         if (!touching) return;
 
-        // Update SVG clipPath circles
-        var areaRect = skShadowLayer.parentElement.getBoundingClientRect();
-        var clipLx = lx - areaRect.left;
-        var clipRx = rx - areaRect.left;
-        var clipY = Py - areaRect.top;
-        if (binoL && binoR) {
-          binoL.setAttribute('cx', clipLx.toFixed(1));
-          binoL.setAttribute('cy', clipY.toFixed(1));
-          binoR.setAttribute('cx', clipRx.toFixed(1));
-          binoR.setAttribute('cy', clipY.toFixed(1));
-        }
-
-        // Shadow offset per letter
-        skLetters.forEach(function(letter, i) {
+        // Scale each letter based on distance from cursor
+        skLetters.forEach(function(letter) {
           var rect = letter.getBoundingClientRect();
-          var lcx = rect.left + rect.width / 2;
-          var lcy = rect.top + rect.height / 2;
-          var dx = Px - lcx;
-          var dy = Py - lcy;
-          var dist = Math.sqrt(dx * dx + dy * dy) || SK_EPSILON;
-          var nx = dx / dist;
-          var ny = dy / dist;
-          var shadowLen = Math.max(3, Math.min(SHADOW_MAX, (dist / 150) * SHADOW_MAX));
-          var ox = -nx * shadowLen;
-          var oy = -ny * shadowLen;
-          if (skShadowLetters[i]) {
-            skShadowLetters[i].style.transform = 'translate(' + ox.toFixed(1) + 'px, ' + oy.toFixed(1) + 'px)';
+          var cx = rect.left + rect.width / 2;
+          var cy = rect.top + rect.height / 2;
+          var dist = Math.sqrt((Px - cx) * (Px - cx) + (Py - cy) * (Py - cy));
+
+          if (dist < LENS_RADIUS) {
+            // Smooth falloff: max scale at center, 1.0 at edge
+            var t = 1 - (dist / LENS_RADIUS);
+            var scale = 1 + t * t * (MAX_SCALE - 1); // quadratic ease for smooth falloff
+            letter.style.setProperty('--sk-lens-scale', scale.toFixed(3));
+          } else {
+            letter.style.setProperty('--sk-lens-scale', '1');
           }
         });
       });
 
       document.addEventListener('mouseleave', function() {
-        binoBeam.classList.remove('visible');
-        skShadowLayer.classList.remove('active');
-        binoVisible = false;
-        if (binoL && binoR) {
-          binoL.setAttribute('cx', '0');
-          binoL.setAttribute('cy', '0');
-          binoR.setAttribute('cx', '0');
-          binoR.setAttribute('cy', '0');
-        }
-        skShadowLetters.forEach(function(sl) { sl.style.transform = ''; });
+        lensBeam.classList.remove('visible');
+        lensVisible = false;
+        resetLetterScales();
       });
 
       // Click-to-replay
       skWordmark.addEventListener('click', function() {
         skWordmark.classList.remove('settled');
         perchSettled = false;
-        binoBeam.classList.remove('visible');
-        skShadowLayer.classList.remove('active');
-        binoVisible = false;
+        lensBeam.classList.remove('visible');
+        lensVisible = false;
+        resetLetterScales();
 
         skLetters.forEach(function(letter) {
           letter.style.animation = 'none';
