@@ -24,12 +24,46 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <div class="project-card-horizontal">
+        <svg viewBox="0 0 60 50" fill="none" xmlns="http://www.w3.org/2000/svg" class="project-icon">
+          <circle cx="30" cy="25" r="20" fill="#0a1628" />
+          <circle cx="22" cy="20" r="3" fill="#4fc3f7" />
+          <circle cx="38" cy="30" r="3" fill="#81d4fa" />
+          <circle cx="30" cy="14" r="2" fill="#b3e5fc" />
+          <line x1="22" y1="20" x2="38" y2="30" stroke="#4fc3f7" stroke-width="0.8" opacity="0.6" />
+          <line x1="22" y1="20" x2="30" y2="14" stroke="#4fc3f7" stroke-width="0.8" opacity="0.6" />
+          <line x1="38" y1="30" x2="30" y2="14" stroke="#81d4fa" stroke-width="0.8" opacity="0.6" />
+        </svg>
+        <div class="project-info">
+          <h3>So Far So Good</h3>
+          <p>An interactive atlas of scientific knowledge. Starting with 188 NASA NIAC speculative aerospace projects, expanding into a full knowledge discovery platform with force-directed graphs, timelines, trending science discussions, and curated reading paths. Bloomberg terminal for space nerds.</p>
+          <a href="https://hactenusbene.com" target="_blank" class="project-link">
+            Visit Site
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="project-card-horizontal">
+        <svg viewBox="0 0 60 50" fill="none" xmlns="http://www.w3.org/2000/svg" class="project-icon">
+          <rect x="10" y="10" width="40" height="30" rx="4" fill="#1a1a2e" stroke="#e0e0e0" stroke-width="1" />
+          <line x1="15" y1="20" x2="45" y2="20" stroke="#555" stroke-width="0.5" />
+          <line x1="15" y1="26" x2="40" y2="26" stroke="#555" stroke-width="0.5" />
+          <line x1="15" y1="32" x2="35" y2="32" stroke="#555" stroke-width="0.5" />
+        </svg>
+        <div class="project-info">
+          <h3>Alice and Bob</h3>
+          <p>A monastic daily journal designed as a longitudinal self-study. Deep journal sessions and calibration sessions establish a baseline and recognize patterns over years. Zero gamification. Largely a black box — not meant to gratify.</p>
+          <span class="project-status">In Development</span>
+        </div>
+      </div>
+
+      <div class="project-card-horizontal">
         <img src="/images/PigSticker.png" alt="Rangley App Icon" class="project-icon" />
         <div class="project-info">
-          <h3>Rangley</h3>
-          <p>A location-based social meetup app for iOS. Built end-to-end: SwiftUI frontend, Vapor backend, AWS deployment.</p>
-          <a href="https://apps.apple.com/us/app/rangley/id6751070400" target="_blank" class="project-link">
-            View on App Store
+          <h3>Rangley <span class="project-status">Shut Down</span></h3>
+          <p>A location-based social meetup app that was built for iOS. End-to-end: SwiftUI frontend, Vapor backend, AWS deployment. Servers were shut down in March 2026.</p>
+          <a href="/rangley" class="project-link">
+            Read More
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
           </a>
         </div>
