@@ -4,18 +4,19 @@
 //
 //   Stage 1 (single):  one 2x4 brick, sequence of single-byte targets, color
 //                      cycles R → G → B per step.
-//   Stage 2 (boss):    four 2x4 bricks in a 2x2 grid; each brick is one
-//                      channel of an RGBA hex color (R, G, B, A). Each brick
-//                      is white at byte=0 and saturates toward its channel
-//                      color as bits are pressed. Solve when the four bytes
-//                      match `bossTarget`.
+//   Stage 2 (boss):    three 2x4 bricks stacked vertically. Together they
+//                      input a 24-bit RGB color (#RRGGBB): top brick = R
+//                      byte, middle = G, bottom = B. All three bricks render
+//                      the SAME unified RGB color (computed from the three
+//                      bytes), so the stack reads as one color monolith.
+//                      Solve when the three bytes match `bossTarget`.
 //
 // On final unlock the gate either fades out (revealing whatever is rendered
 // beneath it) or redirects.
 
 interface Props {
   targets?: number[];      // single-stage byte sequence, default [8]
-  bossTarget?: number[];   // 4-byte RGBA target; if provided, boss stage runs
+  bossTarget?: number[];   // 3-byte RGB target; if provided, boss stage runs
   redirect?: string;       // optional URL to navigate to on final unlock
   hints?: boolean;         // show TARGET + live readout (default true)
 }
@@ -27,7 +28,7 @@ const {
   hints = true,
 } = Astro.props;
 
-const hasBoss = Array.isArray(bossTarget) && bossTarget.length === 4;
+const hasBoss = Array.isArray(bossTarget) && bossTarget.length === 3;
 
 // Color sequence for stage 1: red → green → blue (extra steps fall back to blue).
 const COLORS = ['red', 'green', 'blue'] as const;
@@ -86,7 +87,7 @@ const bossTargetHex = hasBoss
     {hasBoss && (
       <div class="lego-stage-quad">
         <div class="lego-quad-grid">
-          {(['R', 'G', 'B', 'A'] as const).map((ch) => (
+          {(['R', 'G', 'B'] as const).map((ch) => (
             <div
               class={`lego-brick lego-brick-boss lego-brick-${ch.toLowerCase()}`}
               id={`lego-brick-${ch.toLowerCase()}`}
@@ -222,18 +223,18 @@ const bossTargetHex = hasBoss
       inset 0 -1px 0 rgba(0,0,0,0.35);
   }
 
-  /* Boss-brick — smaller cell so 4 fit in a 2x2 grid that comfortably
-     fills the viewport. Background gradient stops are still driven by
-     the same --brick-* variables, but JS sets them inline per byte. */
+  /* Boss-brick — slightly smaller cell so the 3-brick stack fits the
+     viewport with the HUD beneath. All three bricks share the same color
+     (set inline by JS), reading as one unified color monolith. */
   .lego-brick.lego-brick-boss {
-    --cell: clamp(38px, 11.5vmin, 150px);
+    --cell: clamp(45px, 11vmin, 140px);
   }
 
+  /* Vertical stack — 3 bricks read as one tall color monolith. */
   .lego-quad-grid {
-    display: grid;
-    grid-template-columns: auto auto;
-    grid-template-rows: auto auto;
-    gap: clamp(0.6rem, 1.6vmin, 1.4rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.4rem, 1.4vmin, 1.2rem);
   }
 
   /* STUD */
@@ -418,7 +419,6 @@ const bossTargetHex = hasBoss
 </style>
 
 <script>
-  type Channel = 'R' | 'G' | 'B' | 'A';
   const COLORS = ['red', 'green', 'blue'] as const;
 
   const gate           = document.getElementById('lego-gate') as HTMLElement;
@@ -433,7 +433,7 @@ const bossTargetHex = hasBoss
 
   // Stage 2 nodes (may be null if no boss stage)
   const bossCurrentEl  = document.getElementById('lego-boss-current');
-  const bossBricks     = (['r', 'g', 'b', 'a'] as const)
+  const bossBricks     = (['r', 'g', 'b'] as const)
     .map((ch) => document.getElementById(`lego-brick-${ch}`))
     .filter((el): el is HTMLElement => el !== null);
 
@@ -476,34 +476,17 @@ const bossTargetHex = hasBoss
   }
 
   // --------------------------------------------------------------
-  // Boss-brick palette — set CSS variables inline per byte. Each
-  // brick interpolates from white (byte=0) to its channel-specific
-  // endpoint (byte=255).
+  // Boss-brick palette — set CSS variables inline. Every brick gets
+  // the SAME unified RGB color (computed from the three bytes), so
+  // the stack reads as one color monolith. The lighter / darker
+  // gradient stops give each brick the standard lego shading.
   // --------------------------------------------------------------
-
-  function endpointFor(ch: Channel): [number, number, number] {
-    switch (ch) {
-      case 'R': return [255, 0, 0];
-      case 'G': return [0, 255, 0];
-      case 'B': return [0, 0, 255];
-      case 'A': return [0, 0, 0];        // alpha brick: white → black
-    }
-  }
 
   function clamp255(n: number) { return Math.max(0, Math.min(255, n)); }
   function rgb(r: number, g: number, b: number) { return `rgb(${r},${g},${b})`; }
   function rgba(r: number, g: number, b: number, a: number) { return `rgba(${r},${g},${b},${a})`; }
 
-  function setBossPalette(brick: HTMLElement, byte: number): void {
-    const ch = brick.dataset.channel as Channel;
-    const [endR, endG, endB] = endpointFor(ch);
-    const t = byte / 255;
-    // Base color: lerp white → endpoint
-    const r = Math.round(255 * (1 - t) + endR * t);
-    const g = Math.round(255 * (1 - t) + endG * t);
-    const b = Math.round(255 * (1 - t) + endB * t);
-
-    // Brick shading: ±15/30 around base for the linear gradient stops.
+  function setBossPalette(brick: HTMLElement, r: number, g: number, b: number): void {
     const lighten = (c: number, a: number) => clamp255(c + a);
     const darken  = (c: number, a: number) => clamp255(c - a);
 
@@ -512,7 +495,8 @@ const bossTargetHex = hasBoss
     brick.style.setProperty('--brick-3', rgb(darken(r, 18), darken(g, 18), darken(b, 18)));
     brick.style.setProperty('--brick-4', rgb(darken(r, 36), darken(g, 36), darken(b, 36)));
 
-    // Studs lerp from base toward white so they always pop against the brick.
+    // Studs lerp from base toward white so they pop against the brick
+    // (and stay visible at the very dark end of the spectrum).
     const studMix = (a: number) => [
       Math.round(r * (1 - a) + 255 * a),
       Math.round(g * (1 - a) + 255 * a),
@@ -526,7 +510,7 @@ const bossTargetHex = hasBoss
     brick.style.setProperty('--stud-3', rgb(r, g, b));
     brick.style.setProperty('--stud-4', rgb(darken(r, 30), darken(g, 30), darken(b, 30)));
 
-    // Pressed lerps base → black so the depression reads on light bricks.
+    // Pressed lerps base → black; the depression reads on light bricks.
     const pressedMix = (a: number) => [
       Math.round(r * (1 - a)),
       Math.round(g * (1 - a)),
@@ -540,8 +524,6 @@ const bossTargetHex = hasBoss
     brick.style.setProperty('--pressed-2', rgb(p2r, p2g, p2b));
     brick.style.setProperty('--pressed-3', rgb(p3r, p3g, p3b));
 
-    // Shadows / rim — fixed-ish with slight tint so they're visible across
-    // the white-to-channel range.
     brick.style.setProperty('--shadow',   'rgba(0,0,0,0.55)');
     brick.style.setProperty('--shadow-2', 'rgba(0,0,0,0.32)');
     brick.style.setProperty('--rim',      rgba(darken(r, 80), darken(g, 80), darken(b, 80), 0.55));
@@ -555,9 +537,10 @@ const bossTargetHex = hasBoss
       brick.querySelectorAll<HTMLButtonElement>('.lego-stud').forEach((s) =>
         s.classList.remove('pressed')
       );
-      setBossPalette(brick, 0);
+      // All bricks get the same starting color (#000000 — no bits pressed).
+      setBossPalette(brick, 0, 0, 0);
     });
-    if (bossCurrentEl) bossCurrentEl.textContent = '#00000000';
+    if (bossCurrentEl) bossCurrentEl.textContent = '#000000';
   }
 
   // --------------------------------------------------------------
@@ -574,12 +557,14 @@ const bossTargetHex = hasBoss
 
   function tickBoss(): void {
     if (!bossTarget) return;
-    const bytes = bossBricks.map((b) => readBrickByte(b));
-    bossBricks.forEach((b, i) => setBossPalette(b, bytes[i]));
+    const bytes = bossBricks.map((br) => readBrickByte(br));
+    const [r, g, b] = bytes;
+    // Every brick renders the SAME unified color → reads as one monolith.
+    bossBricks.forEach((br) => setBossPalette(br, r, g, b));
     if (bossCurrentEl) {
       bossCurrentEl.textContent = '#' + bytes.map(fmtHex2).join('');
     }
-    if (bytes.every((b, i) => b === bossTarget[i])) {
+    if (bytes.every((v, i) => v === bossTarget[i])) {
       finalUnlock();
     }
   }
