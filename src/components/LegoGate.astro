@@ -1,150 +1,76 @@
 ---
 // LegoGate.astro
-// Two-stage Lego-brick puzzle.
+// One Lego puzzle: three 2x4 bricks side-by-side, each encoding one byte
+// of a US-format date — MM / DD / YY. Solve when the three bytes match
+// `date`. MSB top-left within each brick, so the binary literal reads
+// naturally; e.g. for MM=4 the bottom-row third stud (bit 2) is pressed.
 //
-//   Stage 1 (single):  one 2x4 brick, sequence of single-byte targets, color
-//                      cycles R → G → B per step.
-//   Stage 2 (boss):    three 2x4 bricks stacked vertically. Together they
-//                      input a 24-bit RGB color (#RRGGBB): top brick = R
-//                      byte, middle = G, bottom = B. All three bricks render
-//                      the SAME unified RGB color (computed from the three
-//                      bytes), so the stack reads as one color monolith.
-//                      Solve when the three bytes match `bossTarget`.
-//
-// On final unlock the gate either fades out (revealing whatever is rendered
-// beneath it) or redirects.
+// Not a real CAPTCHA — the target lives in client JS. It's a vibe-gate.
 
 interface Props {
-  targets?: number[];      // single-stage byte sequence, default [8]
-  bossTarget?: number[];   // 3-byte RGB target; if provided, boss stage runs
-  redirect?: string;       // optional URL to navigate to on final unlock
-  hints?: boolean;         // show TARGET + live readout (default true)
+  date?: [number, number, number] | null;  // optional override; default = today (browser-local)
+  redirect?: string;                        // optional URL to navigate to on solve
+  hints?: boolean;                          // show labels + live current/target
 }
 
 const {
-  targets = [8],
-  bossTarget,
+  date = null,
   redirect,
   hints = true,
 } = Astro.props;
-
-const hasBoss = Array.isArray(bossTarget) && bossTarget.length === 3;
-
-// Color sequence for stage 1: red → green → blue (extra steps fall back to blue).
-const COLORS = ['red', 'green', 'blue'] as const;
-
-// Pre-format the boss target as a hex string for the HUD.
-const bossTargetHex = hasBoss
-  ? '#' + (bossTarget as number[])
-      .map((b) => b.toString(16).padStart(2, '0').toUpperCase())
-      .join('')
-  : '';
 ---
 
 <div
   class="lego-gate"
   id="lego-gate"
-  data-targets={JSON.stringify(targets)}
-  data-boss-target={hasBoss ? JSON.stringify(bossTarget) : ''}
+  data-date={date ? JSON.stringify(date) : ''}
   data-redirect={redirect ?? ''}
-  data-color={COLORS[0]}
-  data-stage="single"
   role="dialog"
   aria-modal="true"
-  aria-label="Lego byte gate"
+  aria-label="Lego date gate"
 >
   <div class="lego-game">
-    <!-- ============================================================
-         STAGE 1 — single 2x4 brick, multi-step sequence.
-         ============================================================ -->
-    <div class="lego-stage-single">
-      <div class="lego-brick" id="lego-brick" role="group" aria-label="Lego byte input">
-        <button class="lego-stud" type="button" data-idx="0" aria-label="Bit 7"></button>
-        <button class="lego-stud" type="button" data-idx="1" aria-label="Bit 6"></button>
-        <button class="lego-stud" type="button" data-idx="2" aria-label="Bit 5"></button>
-        <button class="lego-stud" type="button" data-idx="3" aria-label="Bit 4"></button>
-        <button class="lego-stud" type="button" data-idx="4" aria-label="Bit 3"></button>
-        <button class="lego-stud" type="button" data-idx="5" aria-label="Bit 2"></button>
-        <button class="lego-stud" type="button" data-idx="6" aria-label="Bit 1"></button>
-        <button class="lego-stud" type="button" data-idx="7" aria-label="Bit 0"></button>
-      </div>
-      {hints && (
-        <div class="lego-hud" aria-live="polite">
-          <div class="lego-hud-row lego-hud-target">TARGET&nbsp;<span id="lego-target">{targets[0]}</span></div>
-          <div class="lego-hud-row lego-hud-current">
-            <span id="lego-bits">0000&nbsp;0000</span>
-            <span class="lego-hud-eq">=</span>
-            <span id="lego-dec">0</span>
+    <div class="lego-row">
+      {(['MM', 'DD', 'YY'] as const).map((label) => (
+        <div class="lego-slot">
+          {hints && <span class="lego-label">{label}</span>}
+          <div
+            class="lego-brick"
+            id={`lego-brick-${label.toLowerCase()}`}
+            data-component={label}
+            role="group"
+            aria-label={`${label} byte input`}
+          >
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((j) => (
+              <button
+                class="lego-stud"
+                type="button"
+                data-idx={j}
+                aria-label={`${label} bit ${7 - j}`}
+              ></button>
+            ))}
           </div>
         </div>
-      )}
+      ))}
     </div>
 
-    <!-- ============================================================
-         STAGE 2 — four 2x4 bricks (R/G/B/A), 2x2 grid. Boss stage
-         only renders when `bossTarget` is provided.
-         ============================================================ -->
-    {hasBoss && (
-      <div class="lego-stage-quad">
-        <div class="lego-quad-grid">
-          {(['R', 'G', 'B'] as const).map((ch) => (
-            <div
-              class={`lego-brick lego-brick-boss lego-brick-${ch.toLowerCase()}`}
-              id={`lego-brick-${ch.toLowerCase()}`}
-              data-channel={ch}
-              role="group"
-              aria-label={`Channel ${ch} byte input`}
-            >
-              {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-                <button
-                  class="lego-stud"
-                  type="button"
-                  data-idx={i}
-                  aria-label={`${ch} bit ${7 - i}`}
-                ></button>
-              ))}
-            </div>
-          ))}
+    {hints && (
+      <div class="lego-hud" aria-live="polite">
+        <div class="lego-hud-row lego-hud-target">
+          TARGET&nbsp;<span id="lego-target">--/--/--</span>
         </div>
-        {hints && (
-          <div class="lego-hud" aria-live="polite">
-            <div class="lego-hud-row lego-hud-target">TARGET&nbsp;<span id="lego-boss-target">{bossTargetHex}</span></div>
-            <div class="lego-hud-row lego-hud-current"><span id="lego-boss-current">#00000000</span></div>
-          </div>
-        )}
+        <div class="lego-hud-row lego-hud-current">
+          <span id="lego-current">0/0/0</span>
+        </div>
       </div>
     )}
   </div>
 </div>
 
 <style>
-  /* ---------------------------------------------------------------
-     STAGE-1 PALETTES — drive the brick + studs via CSS variables.
-     Boss stage sets these same variables inline-per-brick from JS.
-     --------------------------------------------------------------- */
-  .lego-gate[data-color="red"] {
-    --brick-1: #e6856f;  --brick-2: #cd5e44;  --brick-3: #b04a30;  --brick-4: #8f3320;
-    --stud-1:  #f0a896;  --stud-2:  #e6856f;  --stud-3:  #c4583e;  --stud-4:  #8f3a23;
-    --pressed-1: #6e2b1c; --pressed-2: #58221a; --pressed-3: #361410;
-    --shadow:    rgba(70,20,15,0.55);
-    --shadow-2:  rgba(70,20,15,0.32);
-    --rim:       rgba(90,30,25,0.45);
-    --bottom:    rgba(90,30,25,0.30);
-    --p-shadow:  rgba(40,12, 8,0.85);
-    --p-rim:     rgba(80,25,20,0.85);
-  }
-  .lego-gate[data-color="green"] {
-    --brick-1: #66c47e;  --brick-2: #40bf60;  --brick-3: #2da04a;  --brick-4: #1e7a36;
-    --stud-1:  #9be1ad;  --stud-2:  #66c47e;  --stud-3:  #39ac56;  --stud-4:  #226e36;
-    --pressed-1: #235c30; --pressed-2: #1a4624; --pressed-3: #102b16;
-    --shadow:    rgba(15,70,30,0.55);
-    --shadow-2:  rgba(15,70,30,0.32);
-    --rim:       rgba(20,90,40,0.45);
-    --bottom:    rgba(20,90,40,0.30);
-    --p-shadow:  rgba( 8,40,20,0.85);
-    --p-rim:     rgba(15,80,35,0.85);
-  }
-  .lego-gate[data-color="blue"] {
+  /* Fixed Lego blue palette — no dynamic computing now that there's
+     just one stage and one color. */
+  .lego-gate {
     --brick-1: #62a4d9;  --brick-2: #4f94cd;  --brick-3: #3d83bf;  --brick-4: #2c6fa6;
     --stud-1:  #98c9ed;  --stud-2:  #6cabe0;  --stud-3:  #4f94cd;  --stud-4:  #356f9f;
     --pressed-1: #2c5680; --pressed-2: #1f4368; --pressed-3: #142c4a;
@@ -154,9 +80,7 @@ const bossTargetHex = hasBoss
     --bottom:    rgba(20,55,90,0.30);
     --p-shadow:  rgba(10,30,55,0.85);
     --p-rim:     rgba(15,40,70,0.85);
-  }
 
-  .lego-gate {
     position: fixed;
     inset: 0;
     z-index: 9999;
@@ -173,30 +97,34 @@ const bossTargetHex = hasBoss
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: clamp(1.75rem, 4.5vmin, 3rem);
+    gap: clamp(1.5rem, 4vmin, 2.5rem);
   }
 
-  /* Stage visibility — only one stage shows at a time. */
-  .lego-stage-single, .lego-stage-quad {
+  /* Three bricks side-by-side — reads naturally MM / DD / YY. */
+  .lego-row {
+    display: flex;
+    flex-direction: row;
+    gap: clamp(0.6rem, 1.6vmin, 1.4rem);
+  }
+
+  .lego-slot {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: clamp(1.5rem, 4vmin, 2.5rem);
-  }
-  .lego-gate[data-stage="single"] .lego-stage-quad   { display: none; }
-  .lego-gate[data-stage="quad"]   .lego-stage-single { display: none; }
-  .lego-gate[data-stage="quad"]   .lego-stage-quad   {
-    animation: lego-stage-in 500ms cubic-bezier(.4, 0, .2, 1);
+    gap: clamp(0.4rem, 1vmin, 0.75rem);
   }
 
-  @keyframes lego-stage-in {
-    from { opacity: 0; transform: scale(0.6) translateY(20px); filter: blur(6px); }
-    to   { opacity: 1; transform: scale(1)   translateY(0);    filter: blur(0); }
+  .lego-label {
+    font-family: 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: clamp(0.72rem, 1.4vmin, 0.95rem);
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.50);
+    text-transform: uppercase;
   }
 
-  /* BRICK */
+  /* BRICK — sized so 3 fit comfortably side-by-side on desktop. */
   .lego-brick {
-    --cell: clamp(75px, 24vmin, 320px);
+    --cell: clamp(45px, 11vmin, 130px);
     --cols: 4;
     --rows: 2;
 
@@ -221,20 +149,6 @@ const bossTargetHex = hasBoss
       0 calc(var(--cell) * 0.06) calc(var(--cell) * 0.10) rgba(0,0,0,0.45),
       inset 0  1px 0 rgba(255,255,255,0.20),
       inset 0 -1px 0 rgba(0,0,0,0.35);
-  }
-
-  /* Boss-brick — slightly smaller cell so the 3-brick stack fits the
-     viewport with the HUD beneath. All three bricks share the same color
-     (set inline by JS), reading as one unified color monolith. */
-  .lego-brick.lego-brick-boss {
-    --cell: clamp(45px, 11vmin, 140px);
-  }
-
-  /* Vertical stack — 3 bricks read as one tall color monolith. */
-  .lego-quad-grid {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(0.4rem, 1.4vmin, 1.2rem);
   }
 
   /* STUD */
@@ -314,7 +228,6 @@ const bossTargetHex = hasBoss
     line-height: 1.7;
     font-variant-numeric: tabular-nums;
   }
-
   .lego-hud-row { white-space: nowrap; }
 
   .lego-hud-target {
@@ -322,52 +235,22 @@ const bossTargetHex = hasBoss
     text-transform: uppercase;
     color: rgba(255,255,255,0.45);
   }
-  .lego-hud-target #lego-target,
-  .lego-hud-target #lego-boss-target {
+  .lego-hud-target #lego-target {
     color: rgba(255,255,255,0.85);
     font-weight: 700;
     letter-spacing: 0.15em;
   }
+
   .lego-hud-current {
     font-size: clamp(1.1rem, 2.6vmin, 1.7rem);
     color: rgba(255,255,255,0.92);
   }
-  .lego-hud-current .lego-hud-eq { margin: 0 0.65em; opacity: 0.4; }
 
-  /* ---------------------------------------------------------------
-     CYCLING — single-stage intermediate-step transition. Scoped to
-     the single stage so quad bricks aren't affected when stage flips.
-     --------------------------------------------------------------- */
-  .lego-game.cycling .lego-stage-single .lego-stud {
-    animation: lego-stud-pulse 520ms cubic-bezier(.5, 0, .5, 1);
-  }
-  .lego-game.cycling .lego-stage-single .lego-stud:nth-child(2) { animation-delay:  40ms; }
-  .lego-game.cycling .lego-stage-single .lego-stud:nth-child(3) { animation-delay:  80ms; }
-  .lego-game.cycling .lego-stage-single .lego-stud:nth-child(4) { animation-delay: 120ms; }
-  .lego-game.cycling .lego-stage-single .lego-stud:nth-child(5) { animation-delay: 160ms; }
-  .lego-game.cycling .lego-stage-single .lego-stud:nth-child(6) { animation-delay: 200ms; }
-  .lego-game.cycling .lego-stage-single .lego-stud:nth-child(7) { animation-delay: 240ms; }
-  .lego-game.cycling .lego-stage-single .lego-stud:nth-child(8) { animation-delay: 280ms; }
-
-  .lego-game.cycling .lego-stage-single .lego-brick {
-    animation: lego-brick-cycle 1600ms cubic-bezier(.4, 0, .2, 1) forwards;
-  }
-  @keyframes lego-brick-cycle {
-    0%, 50% { transform: scale(1);   opacity: 1; filter: blur(0); }
-    69%     { transform: scale(0.6) translateY(20px); opacity: 0; filter: blur(6px); }
-    78%     { transform: scale(0.6) translateY(20px); opacity: 0; filter: blur(6px); }
-    100%    { transform: scale(1);   opacity: 1; filter: blur(0); }
-  }
-
-  /* ---------------------------------------------------------------
-     UNLOCKING — final solve. Pulse all currently-visible studs, fade
-     all visible bricks + HUD, then fade the gate itself.
-     --------------------------------------------------------------- */
+  /* UNLOCK — pulse studs left-to-right across all bricks, then drop the
+     bricks away, then fade the gate. */
   .lego-game.unlocking .lego-stud {
     animation: lego-stud-pulse 520ms cubic-bezier(.5, 0, .5, 1);
   }
-  /* Stagger pulses across the visible studs (works for both stages — at
-     most 32 studs in boss stage, walked left-to-right top-to-bottom). */
   .lego-game.unlocking .lego-stud:nth-child(2) { animation-delay:  40ms; }
   .lego-game.unlocking .lego-stud:nth-child(3) { animation-delay:  80ms; }
   .lego-game.unlocking .lego-stud:nth-child(4) { animation-delay: 120ms; }
@@ -385,9 +268,11 @@ const bossTargetHex = hasBoss
   .lego-game.unlocking .lego-brick {
     animation: lego-brick-out 600ms 480ms cubic-bezier(.4, 0, .8, .2) forwards;
   }
-  .lego-game.unlocking .lego-hud {
+  .lego-game.unlocking .lego-hud,
+  .lego-game.unlocking .lego-label {
     animation: lego-hud-out 400ms 480ms ease-out forwards;
   }
+
   @keyframes lego-brick-out {
     to { transform: scale(0.6) translateY(20px); opacity: 0; filter: blur(6px); }
   }
@@ -405,13 +290,11 @@ const bossTargetHex = hasBoss
 
   @media (prefers-reduced-motion: reduce) {
     .lego-stud, .lego-stud.pressed, .lego-stud:hover, .lego-stud:active,
-    .lego-game.cycling .lego-stage-single .lego-stud,
-    .lego-game.cycling .lego-stage-single .lego-brick,
     .lego-game.unlocking .lego-stud,
     .lego-game.unlocking .lego-brick,
     .lego-game.unlocking .lego-hud,
-    .lego-gate.unlocking,
-    .lego-gate[data-stage="quad"] .lego-stage-quad {
+    .lego-game.unlocking .lego-label,
+    .lego-gate.unlocking {
       transition: none;
       animation: none;
     }
@@ -419,28 +302,29 @@ const bossTargetHex = hasBoss
 </style>
 
 <script>
-  const COLORS = ['red', 'green', 'blue'] as const;
+  const gate      = document.getElementById('lego-gate') as HTMLElement;
+  const game      = gate.querySelector('.lego-game') as HTMLElement;
+  const targetEl  = document.getElementById('lego-target');     // null when hints=false
+  const currentEl = document.getElementById('lego-current');    // null when hints=false
 
-  const gate           = document.getElementById('lego-gate') as HTMLElement;
-  const game           = gate.querySelector('.lego-game') as HTMLElement;
-
-  // Stage 1 nodes
-  const singleBrick    = document.getElementById('lego-brick') as HTMLElement;
-  const singleStuds    = Array.from(singleBrick.querySelectorAll<HTMLButtonElement>('.lego-stud'));
-  const decEl          = document.getElementById('lego-dec');           // null when hints=false
-  const bitsEl         = document.getElementById('lego-bits');          // null when hints=false
-  const targetEl       = document.getElementById('lego-target');        // null when hints=false
-
-  // Stage 2 nodes (may be null if no boss stage)
-  const bossCurrentEl  = document.getElementById('lego-boss-current');
-  const bossBricks     = (['r', 'g', 'b'] as const)
-    .map((ch) => document.getElementById(`lego-brick-${ch}`))
+  const bricks = (['mm', 'dd', 'yy'] as const)
+    .map((c) => document.getElementById(`lego-brick-${c}`))
     .filter((el): el is HTMLElement => el !== null);
 
-  const targets: number[] = JSON.parse(gate.dataset.targets || '[8]');
-  const bossTargetRaw = gate.dataset.bossTarget || '';
-  const bossTarget: number[] | null =
-    bossTargetRaw ? JSON.parse(bossTargetRaw) : null;
+  // Target = today's date in the visitor's local timezone unless an explicit
+  // override was passed in via the `date` prop (data-date attribute).
+  function todayBytes(): [number, number, number] {
+    const d = new Date();
+    return [d.getMonth() + 1, d.getDate(), d.getFullYear() % 100];
+  }
+  const dateAttr = gate.dataset.date || '';
+  const dateTarget: [number, number, number] = dateAttr
+    ? (JSON.parse(dateAttr) as [number, number, number])
+    : todayBytes();
+
+  // Reflect the live target into the HUD now that we know it.
+  if (targetEl) targetEl.textContent = dateTarget.join('/');
+
   const redirect = gate.dataset.redirect || '';
 
   // Lock body scroll while gate is up.
@@ -449,14 +333,10 @@ const bossTargetHex = hasBoss
   document.body.style.overflow = 'hidden';
   document.documentElement.style.overflow = 'hidden';
 
-  let currentStep = 0;          // index into `targets` for stage 1
   let acceptingInput = true;
   let unlocking = false;
 
-  // --------------------------------------------------------------
-  // Bit / byte helpers
-  // --------------------------------------------------------------
-
+  // idx 0 (top-left) = MSB (bit 7); idx 7 (bottom-right) = LSB (bit 0).
   function readBrickByte(brick: HTMLElement): number {
     const studs = brick.querySelectorAll<HTMLButtonElement>('.lego-stud');
     let v = 0;
@@ -466,172 +346,13 @@ const bossTargetHex = hasBoss
     return v;
   }
 
-  function fmtBits(v: number): string {
-    const b = v.toString(2).padStart(8, '0');
-    return b.slice(0, 4) + '\u00A0' + b.slice(4);
-  }
-
-  function fmtHex2(v: number): string {
-    return v.toString(16).padStart(2, '0').toUpperCase();
-  }
-
-  // --------------------------------------------------------------
-  // Boss-brick palette — set CSS variables inline. Every brick gets
-  // the SAME unified RGB color (computed from the three bytes), so
-  // the stack reads as one color monolith. The lighter / darker
-  // gradient stops give each brick the standard lego shading.
-  // --------------------------------------------------------------
-
-  function clamp255(n: number) { return Math.max(0, Math.min(255, n)); }
-  function rgb(r: number, g: number, b: number) { return `rgb(${r},${g},${b})`; }
-  function rgba(r: number, g: number, b: number, a: number) { return `rgba(${r},${g},${b},${a})`; }
-
-  function setBossPalette(brick: HTMLElement, r: number, g: number, b: number): void {
-    const lighten = (c: number, a: number) => clamp255(c + a);
-    const darken  = (c: number, a: number) => clamp255(c - a);
-
-    brick.style.setProperty('--brick-1', rgb(lighten(r, 12), lighten(g, 12), lighten(b, 12)));
-    brick.style.setProperty('--brick-2', rgb(r, g, b));
-    brick.style.setProperty('--brick-3', rgb(darken(r, 18), darken(g, 18), darken(b, 18)));
-    brick.style.setProperty('--brick-4', rgb(darken(r, 36), darken(g, 36), darken(b, 36)));
-
-    // Studs lerp from base toward white so they pop against the brick
-    // (and stay visible at the very dark end of the spectrum).
-    const studMix = (a: number) => [
-      Math.round(r * (1 - a) + 255 * a),
-      Math.round(g * (1 - a) + 255 * a),
-      Math.round(b * (1 - a) + 255 * a),
-    ] as const;
-    const [s1r, s1g, s1b] = studMix(0.55);
-    const [s2r, s2g, s2b] = studMix(0.25);
-
-    brick.style.setProperty('--stud-1', rgb(s1r, s1g, s1b));
-    brick.style.setProperty('--stud-2', rgb(s2r, s2g, s2b));
-    brick.style.setProperty('--stud-3', rgb(r, g, b));
-    brick.style.setProperty('--stud-4', rgb(darken(r, 30), darken(g, 30), darken(b, 30)));
-
-    // Pressed lerps base → black; the depression reads on light bricks.
-    const pressedMix = (a: number) => [
-      Math.round(r * (1 - a)),
-      Math.round(g * (1 - a)),
-      Math.round(b * (1 - a)),
-    ] as const;
-    const [p1r, p1g, p1b] = pressedMix(0.55);
-    const [p2r, p2g, p2b] = pressedMix(0.75);
-    const [p3r, p3g, p3b] = pressedMix(0.88);
-
-    brick.style.setProperty('--pressed-1', rgb(p1r, p1g, p1b));
-    brick.style.setProperty('--pressed-2', rgb(p2r, p2g, p2b));
-    brick.style.setProperty('--pressed-3', rgb(p3r, p3g, p3b));
-
-    brick.style.setProperty('--shadow',   'rgba(0,0,0,0.55)');
-    brick.style.setProperty('--shadow-2', 'rgba(0,0,0,0.32)');
-    brick.style.setProperty('--rim',      rgba(darken(r, 80), darken(g, 80), darken(b, 80), 0.55));
-    brick.style.setProperty('--bottom',   rgba(darken(r, 60), darken(g, 60), darken(b, 60), 0.30));
-    brick.style.setProperty('--p-shadow', 'rgba(0,0,0,0.85)');
-    brick.style.setProperty('--p-rim',    rgba(darken(r, 100), darken(g, 100), darken(b, 100), 0.85));
-  }
-
-  function initBoss(): void {
-    bossBricks.forEach((brick) => {
-      brick.querySelectorAll<HTMLButtonElement>('.lego-stud').forEach((s) =>
-        s.classList.remove('pressed')
-      );
-      // All bricks get the same starting color (#000000 — no bits pressed).
-      setBossPalette(brick, 0, 0, 0);
-    });
-    if (bossCurrentEl) bossCurrentEl.textContent = '#000000';
-  }
-
-  // --------------------------------------------------------------
-  // Tick — central read of state for the current stage. Decides
-  // whether to advance / unlock.
-  // --------------------------------------------------------------
-
-  function tickSingle(): void {
-    const v = readBrickByte(singleBrick);
-    if (decEl)  decEl.textContent  = String(v);
-    if (bitsEl) bitsEl.textContent = fmtBits(v);
-    if (v === targets[currentStep]) advance();
-  }
-
-  function tickBoss(): void {
-    if (!bossTarget) return;
-    const bytes = bossBricks.map((br) => readBrickByte(br));
-    const [r, g, b] = bytes;
-    // Every brick renders the SAME unified color → reads as one monolith.
-    bossBricks.forEach((br) => setBossPalette(br, r, g, b));
-    if (bossCurrentEl) {
-      bossCurrentEl.textContent = '#' + bytes.map(fmtHex2).join('');
-    }
-    if (bytes.every((v, i) => v === bossTarget[i])) {
-      finalUnlock();
-    }
-  }
-
   function tick(): void {
-    if (gate.dataset.stage === 'single') tickSingle();
-    else                                  tickBoss();
+    const bytes = bricks.map(readBrickByte);
+    if (currentEl) currentEl.textContent = bytes.join('/');
+    if (bytes.every((v, i) => v === dateTarget[i])) unlock();
   }
 
-  // --------------------------------------------------------------
-  // Stage 1 advance — either cycle to the next single target, hand
-  // off to the boss stage, or final-unlock if no boss.
-  // --------------------------------------------------------------
-
-  function advance(): void {
-    if (currentStep < targets.length - 1) {
-      cycleSingle();
-    } else if (bossTarget) {
-      transitionToBoss();
-    } else {
-      finalUnlock();
-    }
-  }
-
-  function cycleSingle(): void {
-    acceptingInput = false;
-    game.classList.add('cycling');
-
-    window.setTimeout(() => {
-      // Mid-cycle (brick invisible) — reset studs, advance step, swap palette.
-      singleStuds.forEach((s) => s.classList.remove('pressed'));
-      currentStep += 1;
-      gate.dataset.color = COLORS[Math.min(currentStep, COLORS.length - 1)];
-      if (targetEl) targetEl.textContent = String(targets[currentStep]);
-      if (decEl)    decEl.textContent    = '0';
-      if (bitsEl)   bitsEl.textContent   = '0000\u00A00000';
-    }, 1180);
-
-    window.setTimeout(() => {
-      game.classList.remove('cycling');
-      acceptingInput = true;
-    }, 1600);
-  }
-
-  function transitionToBoss(): void {
-    acceptingInput = false;
-    game.classList.add('cycling');
-
-    window.setTimeout(() => {
-      // Hide stage 1; show stage 2; initialize boss bricks.
-      singleStuds.forEach((s) => s.classList.remove('pressed'));
-      gate.dataset.stage = 'quad';
-      initBoss();
-    }, 1180);
-
-    window.setTimeout(() => {
-      game.classList.remove('cycling');
-      acceptingInput = true;
-    }, 1600);
-  }
-
-  // --------------------------------------------------------------
-  // Final unlock — pulse + brick-out + gate-fade, then redirect or
-  // hide the gate.
-  // --------------------------------------------------------------
-
-  function finalUnlock(): void {
+  function unlock(): void {
     if (unlocking) return;
     unlocking = true;
     acceptingInput = false;
@@ -649,10 +370,6 @@ const bossTargetHex = hasBoss
     }, 1250);
   }
 
-  // --------------------------------------------------------------
-  // Single delegated click handler — works across both stages.
-  // --------------------------------------------------------------
-
   gate.addEventListener('click', (e) => {
     if (!acceptingInput || unlocking) return;
     const stud = (e.target as HTMLElement).closest('.lego-stud');
@@ -661,7 +378,5 @@ const bossTargetHex = hasBoss
     tick();
   });
 
-  // Initial render.
-  if (bossTarget) initBoss();
   tick();
 </script>
