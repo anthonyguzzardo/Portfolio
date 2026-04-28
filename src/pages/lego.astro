@@ -1,0 +1,158 @@
+---
+// /lego — restart. ONE big cylindrical stud, dead-center.
+// Press → cylinder compresses toward the floor. Release → springs back.
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Lego Stud – Anthony Guzzardo"
+  description="A single pressable Lego stud."
+>
+  <div class="stage">
+    <button class="cylinder" id="stud" type="button" aria-label="Stud">
+      <span class="side"></span>
+      <span class="top"></span>
+    </button>
+  </div>
+</Layout>
+
+<style is:global>
+  html, body {
+    overflow: hidden;
+    height: 100%;
+    overscroll-behavior: none;
+  }
+</style>
+
+<style>
+  .stage {
+    position: fixed;
+    inset: 0;
+    z-index: 1;                 /* above ThemeBackground (-1), below Nav (1000) */
+    background: #0a0a0a;        /* near-black, sits on the site's dark base */
+    display: grid;
+    place-items: center;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  /* ---------------------------------------------------------------
+     CYLINDER — built from two stacked layers:
+       .top   = the foreshortened circle (an ellipse) on top
+       .side  = the vertical wall with a curved bottom (the cylinder's
+                bottom edge). Horizontal gradient on the side gives
+                the cylindrical light-wrap.
+     The whole element scales down vertically on press so the cylinder
+     visibly compresses. Spring curve on release for the bounce-back.
+     --------------------------------------------------------------- */
+  .cylinder {
+    /* Diameter scales with the smaller viewport dimension so it always
+       sits comfortably in the middle and feels LARGE. */
+    --d:      clamp(280px, 38vmin, 580px);
+    --top-h:  calc(var(--d) * 0.28);   /* visible height of the top ellipse */
+    --side-h: calc(var(--d) * 0.36);   /* visible height of the side wall  */
+
+    width:  var(--d);
+    height: calc(var(--top-h) / 2 + var(--side-h));
+
+    position: relative;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    outline: none;
+
+    /* Compress from the bottom on press so the cylinder sinks INTO the floor. */
+    transform-origin: center bottom;
+    transform: scaleY(1);
+
+    /* Subtle drop shadow on the floor underneath. */
+    filter:
+      drop-shadow(0 calc(var(--d) * 0.05) calc(var(--d) * 0.06) rgba(0,0,0,0.55))
+      drop-shadow(0 calc(var(--d) * 0.10) calc(var(--d) * 0.14) rgba(0,0,0,0.30));
+
+    /* Springy release — slight overshoot so it has bounce-back feel. */
+    transition:
+      transform 440ms cubic-bezier(.34, 1.55, .50, 1),
+      filter    440ms cubic-bezier(.34, 1.55, .50, 1);
+  }
+
+  /* Side wall: rectangle below the lid; rounded bottom = cylinder's
+     bottom curve. Horizontal gradient simulates light wrapping around. */
+  .side {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(var(--top-h) / 2);     /* tucks under the top ellipse */
+    height: var(--side-h);
+    border-radius: 0 0 50% 50% / 0 0 var(--top-h) var(--top-h);
+    background: linear-gradient(to right,
+      #2a5d89  0%,
+      #4488c2 18%,
+      #6cabe0 50%,
+      #4488c2 82%,
+      #2a5d89 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(0,0,0,0.20),
+      inset 0 calc(var(--side-h) * -0.10) calc(var(--side-h) * 0.20) rgba(0,0,0,0.22);
+  }
+
+  /* Top face: ellipse (foreshortened circle), lit from upper-left.
+     Subtle 1px outer ring = the circular border. */
+  .top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--top-h);
+    border-radius: 50%;
+    background:
+      radial-gradient(ellipse at 32% 32%,
+        #a3d1f0  0%,
+        #6cabe0 35%,
+        #4f94cd 70%,
+        #356f9f 100%);
+    box-shadow:
+      0 0 0 1px rgba(20,55,90,0.40),
+      inset 0 calc(var(--top-h) *  0.10) calc(var(--top-h) * 0.16) rgba(255,255,255,0.22),
+      inset 0 calc(var(--top-h) * -0.12) calc(var(--top-h) * 0.18) rgba(0,0,0,0.22);
+  }
+
+  /* PRESSED — compress vertically; lid sinks toward floor. Quick on the way
+     down (linear-ish ease-out) — the spring lives in the release transition. */
+  .cylinder:active,
+  .cylinder.pressed {
+    transform: scaleY(0.36);
+    filter:
+      drop-shadow(0 calc(var(--d) * 0.02) calc(var(--d) * 0.03) rgba(0,0,0,0.55))
+      drop-shadow(0 calc(var(--d) * 0.04) calc(var(--d) * 0.06) rgba(0,0,0,0.25));
+    transition:
+      transform 95ms cubic-bezier(.4, 0, 1, 1),
+      filter    95ms cubic-bezier(.4, 0, 1, 1);
+  }
+
+  .cylinder:focus-visible {
+    outline: 3px solid rgba(255,255,255,0.45);
+    outline-offset: 10px;
+    border-radius: 50%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cylinder,
+    .cylinder:active,
+    .cylinder.pressed {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  const stud = document.getElementById('stud')!;
+  // Brief 'pressed' pulse on click — keeps the compressed state visible long
+  // enough for the springy release to read on touch devices.
+  stud.addEventListener('click', () => {
+    stud.classList.add('pressed');
+    window.setTimeout(() => stud.classList.remove('pressed'), 180);
+  });
+</script>
