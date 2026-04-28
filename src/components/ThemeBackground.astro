@@ -526,6 +526,11 @@ const { class: className = '', opacity = 1.0 } = Astro.props;
         this.renderer.setClearColor(theme.colors.background, 1);
         this.mesh = null;
         this.material = null;
+        // Hide any theme-specific GUI from the previous theme — the no-shader
+        // branch returns early so the show/hide logic below never runs.
+        document.getElementById('tile-slider-container')?.classList.add('hidden');
+        document.getElementById('fibers-gui-container')?.classList.add('hidden');
+        document.getElementById('warp-theme-container')?.classList.add('hidden');
         return;
       }
 

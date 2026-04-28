@@ -1,0 +1,199 @@
+---
+// LegoBackground.astro
+// Lego theme background — a visual duplicate of LegoGate.astro (three 2x4
+// bricks side-by-side, R/G/B per brick, MSB top-left) rendered as a static
+// underlay. Studs are real clickable buttons that toggle pressed state on
+// click — pure fidget, no puzzle, no target, no unlock.
+//
+// Visible only when the active theme is `lego` (html[data-theme="lego"]).
+---
+
+<div class="lego-bg" id="lego-bg" aria-hidden="true">
+  <div class="lego-bg-row">
+    {(['red', 'green', 'blue'] as const).map((color) => (
+      <div class="lego-bg-brick" data-color={color}>
+        {[0, 1, 2, 3, 4, 5, 6, 7].map(() => (
+          <button class="lego-bg-stud" type="button" tabindex="-1"></button>
+        ))}
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  /* Per-brick palettes — identical to LegoGate.astro so the bg reads as
+     the same physical piece. */
+  .lego-bg-brick[data-color="red"] {
+    --brick-1: #e6856f;  --brick-2: #cd5e44;  --brick-3: #b04a30;  --brick-4: #8f3320;
+    --stud-1:  #f0a896;  --stud-2:  #e6856f;  --stud-3:  #c4583e;  --stud-4:  #8f3a23;
+    --pressed-1: #6e2b1c; --pressed-2: #58221a; --pressed-3: #361410;
+    --shadow:    rgba(70,20,15,0.55);
+    --shadow-2:  rgba(70,20,15,0.32);
+    --rim:       rgba(90,30,25,0.45);
+    --bottom:    rgba(90,30,25,0.30);
+    --p-shadow:  rgba(40,12, 8,0.85);
+    --p-rim:     rgba(80,25,20,0.85);
+  }
+  .lego-bg-brick[data-color="green"] {
+    --brick-1: #66c47e;  --brick-2: #40bf60;  --brick-3: #2da04a;  --brick-4: #1e7a36;
+    --stud-1:  #9be1ad;  --stud-2:  #66c47e;  --stud-3:  #39ac56;  --stud-4:  #226e36;
+    --pressed-1: #235c30; --pressed-2: #1a4624; --pressed-3: #102b16;
+    --shadow:    rgba(15,70,30,0.55);
+    --shadow-2:  rgba(15,70,30,0.32);
+    --rim:       rgba(20,90,40,0.45);
+    --bottom:    rgba(20,90,40,0.30);
+    --p-shadow:  rgba( 8,40,20,0.85);
+    --p-rim:     rgba(15,80,35,0.85);
+  }
+  .lego-bg-brick[data-color="blue"] {
+    --brick-1: #62a4d9;  --brick-2: #4f94cd;  --brick-3: #3d83bf;  --brick-4: #2c6fa6;
+    --stud-1:  #98c9ed;  --stud-2:  #6cabe0;  --stud-3:  #4f94cd;  --stud-4:  #356f9f;
+    --pressed-1: #2c5680; --pressed-2: #1f4368; --pressed-3: #142c4a;
+    --shadow:    rgba(15,40,70,0.55);
+    --shadow-2:  rgba(15,40,70,0.32);
+    --rim:       rgba(20,55,90,0.45);
+    --bottom:    rgba(20,55,90,0.30);
+    --p-shadow:  rgba(10,30,55,0.85);
+    --p-rim:     rgba(15,40,70,0.85);
+  }
+
+  .lego-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: #0a0a0a;
+    display: none;
+    place-items: center;
+    pointer-events: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Active only when Lego theme is selected. */
+  html[data-theme="lego"] .lego-bg {
+    display: grid;
+    pointer-events: auto;
+  }
+
+  .lego-bg-row {
+    display: flex;
+    flex-direction: row;
+    gap: clamp(0.6rem, 1.6vmin, 1.4rem);
+  }
+
+  /* BRICK — same dimensions/shading as the gate. */
+  .lego-bg-brick {
+    --cell: clamp(45px, 11vmin, 130px);
+    --cols: 4;
+    --rows: 2;
+
+    width:  calc(var(--cell) * var(--cols));
+    height: calc(var(--cell) * var(--rows));
+
+    display: grid;
+    grid-template-columns: repeat(var(--cols), var(--cell));
+    grid-template-rows:    repeat(var(--rows), var(--cell));
+
+    position: relative;
+    border-radius: calc(var(--cell) * 0.05);
+
+    background: linear-gradient(135deg,
+      var(--brick-1) 0%,
+      var(--brick-2) 45%,
+      var(--brick-3) 80%,
+      var(--brick-4) 100%);
+
+    box-shadow:
+      0 calc(var(--cell) * 0.16) calc(var(--cell) * 0.30) rgba(0,0,0,0.60),
+      0 calc(var(--cell) * 0.06) calc(var(--cell) * 0.10) rgba(0,0,0,0.45),
+      inset 0  1px 0 rgba(255,255,255,0.20),
+      inset 0 -1px 0 rgba(0,0,0,0.35);
+  }
+
+  /* STUD — same as the gate's. */
+  .lego-bg-stud {
+    --d: calc(var(--cell) * 0.62);
+
+    width: var(--d);
+    height: var(--d);
+    border: 0;
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
+    place-self: center;
+    cursor: pointer;
+    outline: none;
+    position: relative;
+    -webkit-appearance: none;
+            appearance: none;
+
+    background: radial-gradient(circle at 32% 30%,
+      var(--stud-1)  0%,
+      var(--stud-2) 35%,
+      var(--stud-3) 70%,
+      var(--stud-4) 100%);
+
+    box-shadow:
+      calc(var(--d) * 0.03) calc(var(--d) * 0.07) calc(var(--d) * 0.08) var(--shadow),
+      calc(var(--d) * 0.05) calc(var(--d) * 0.12) calc(var(--d) * 0.14) var(--shadow-2),
+      inset 0 0 0 1.5px var(--rim),
+      inset 0 calc(var(--d) *  0.07) calc(var(--d) * 0.12) rgba(255,255,255,0.22),
+      inset 0 calc(var(--d) * -0.04) calc(var(--d) * 0.06) var(--bottom);
+
+    transition:
+      transform   420ms cubic-bezier(.34, 1.55, .50, 1),
+      box-shadow  420ms cubic-bezier(.34, 1.55, .50, 1),
+      background  420ms cubic-bezier(.34, 1.55, .50, 1);
+  }
+
+  .lego-bg-stud:hover { transform: translateY(-1px); }
+
+  .lego-bg-stud:focus-visible {
+    box-shadow:
+      0 0 0 3px rgba(255,255,255,0.50),
+      calc(var(--d) * 0.05) calc(var(--d) * 0.12) calc(var(--d) * 0.14) var(--shadow-2),
+      inset 0 0 0 1.5px var(--rim),
+      inset 0 calc(var(--d) * 0.07) calc(var(--d) * 0.12) rgba(255,255,255,0.22);
+  }
+
+  .lego-bg-stud.pressed {
+    background: radial-gradient(circle at 50% 50%,
+      var(--pressed-1)  0%,
+      var(--pressed-2) 55%,
+      var(--pressed-3) 100%);
+    box-shadow:
+      0 0 0 0 rgba(0,0,0,0),
+      0 0 0 0 rgba(0,0,0,0),
+      inset 0 0 0 1.5px var(--p-rim),
+      inset 0 calc(var(--d) *  0.10) calc(var(--d) * 0.18) var(--p-shadow),
+      inset 0 calc(var(--d) *  0.04) calc(var(--d) * 0.06) var(--p-shadow);
+    transition:
+      transform   100ms cubic-bezier(.4, 0, 1, 1),
+      box-shadow  100ms cubic-bezier(.4, 0, 1, 1),
+      background  100ms cubic-bezier(.4, 0, 1, 1);
+  }
+
+  .lego-bg-stud:active:not(.pressed) {
+    transform: translateY(2px);
+    transition: transform 70ms cubic-bezier(.4, 0, 1, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lego-bg-stud,
+    .lego-bg-stud.pressed,
+    .lego-bg-stud:hover,
+    .lego-bg-stud:active {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // Toggle a stud on click. No puzzle, no target, no unlock — pure fidget.
+  const bg = document.getElementById('lego-bg') as HTMLElement;
+  bg.addEventListener('click', (e) => {
+    const stud = (e.target as HTMLElement).closest('.lego-bg-stud');
+    if (!stud) return;
+    stud.classList.toggle('pressed');
+  });
+</script>

@@ -3,6 +3,7 @@ import '../styles/global.css';
 import '../styles/rangley-styles.css';
 import Nav from '../components/Nav.astro';
 import ThemeBackground from '../components/ThemeBackground.astro';
+import LegoBackground from '../components/LegoBackground.astro';
 
 interface Props {
 	title: string;
@@ -30,6 +31,7 @@ const { title, description = 'Anthony Guzzardo - Full-stack Developer' } = Astro
 	</head>
 	<body>
 		<ThemeBackground />
+		<LegoBackground />
 		<Nav />
 
 		<slot />
