@@ -336,6 +336,18 @@ const {
   const targetEl  = document.getElementById('lego-target');     // null when hints=false
   const currentEl = document.getElementById('lego-current');    // null when hints=false
 
+  // Session pass — once solved, refreshing the tab shouldn't re-prompt.
+  // Keyed by date so a new day re-locks; cleared when the tab closes.
+  const SESSION_KEY = 'lego-gate-passed';
+  function sessionMatches(target: [number, number, number]): boolean {
+    try {
+      return sessionStorage.getItem(SESSION_KEY) === target.join('/');
+    } catch { return false; }
+  }
+  function markSessionPassed(target: [number, number, number]): void {
+    try { sessionStorage.setItem(SESSION_KEY, target.join('/')); } catch {}
+  }
+
   const bricks = (['mm', 'dd', 'yy'] as const)
     .map((c) => document.getElementById(`lego-brick-${c}`))
     .filter((el): el is HTMLElement => el !== null);
@@ -356,11 +368,18 @@ const {
 
   const redirect = gate.dataset.redirect || '';
 
+  // If this tab already passed today's gate, skip it entirely.
+  if (sessionMatches(dateTarget)) {
+    gate.style.display = 'none';
+  }
+
   // Lock body scroll while gate is up.
   const prevBodyOverflow = document.body.style.overflow;
   const prevHtmlOverflow = document.documentElement.style.overflow;
-  document.body.style.overflow = 'hidden';
-  document.documentElement.style.overflow = 'hidden';
+  if (gate.style.display !== 'none') {
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+  }
 
   let acceptingInput = true;
   let unlocking = false;
@@ -385,6 +404,7 @@ const {
     if (unlocking) return;
     unlocking = true;
     acceptingInput = false;
+    markSessionPassed(dateTarget);
     game.classList.add('unlocking');
     gate.classList.add('unlocking');
 
