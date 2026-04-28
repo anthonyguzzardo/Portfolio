@@ -31,27 +31,31 @@ const {
 >
   <div class="lego-game">
     <div class="lego-row">
-      {(['MM', 'DD', 'YY'] as const).map((label) => (
-        <div class="lego-slot">
-          {hints && <span class="lego-label">{label}</span>}
-          <div
-            class="lego-brick"
-            id={`lego-brick-${label.toLowerCase()}`}
-            data-component={label}
-            role="group"
-            aria-label={`${label} byte input`}
-          >
-            {[0, 1, 2, 3, 4, 5, 6, 7].map((j) => (
-              <button
-                class="lego-stud"
-                type="button"
-                data-idx={j}
-                aria-label={`${label} bit ${7 - j}`}
-              ></button>
-            ))}
+      {(['MM', 'DD', 'YY'] as const).map((label, i) => {
+        const color = (['red', 'green', 'blue'] as const)[i];
+        return (
+          <div class="lego-slot">
+            {hints && <span class="lego-label">{label}</span>}
+            <div
+              class="lego-brick"
+              id={`lego-brick-${label.toLowerCase()}`}
+              data-component={label}
+              data-color={color}
+              role="group"
+              aria-label={`${label} byte input`}
+            >
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((j) => (
+                <button
+                  class="lego-stud"
+                  type="button"
+                  data-idx={j}
+                  aria-label={`${label} bit ${7 - j}`}
+                ></button>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
 
     {hints && (
@@ -68,9 +72,32 @@ const {
 </div>
 
 <style>
-  /* Fixed Lego blue palette — no dynamic computing now that there's
-     just one stage and one color. */
-  .lego-gate {
+  /* Per-brick palettes — R, G, B applied to MM, DD, YY respectively
+     via [data-color] on each brick. CSS variables cascade to the
+     studs inside each brick. */
+  .lego-brick[data-color="red"] {
+    --brick-1: #e6856f;  --brick-2: #cd5e44;  --brick-3: #b04a30;  --brick-4: #8f3320;
+    --stud-1:  #f0a896;  --stud-2:  #e6856f;  --stud-3:  #c4583e;  --stud-4:  #8f3a23;
+    --pressed-1: #6e2b1c; --pressed-2: #58221a; --pressed-3: #361410;
+    --shadow:    rgba(70,20,15,0.55);
+    --shadow-2:  rgba(70,20,15,0.32);
+    --rim:       rgba(90,30,25,0.45);
+    --bottom:    rgba(90,30,25,0.30);
+    --p-shadow:  rgba(40,12, 8,0.85);
+    --p-rim:     rgba(80,25,20,0.85);
+  }
+  .lego-brick[data-color="green"] {
+    --brick-1: #66c47e;  --brick-2: #40bf60;  --brick-3: #2da04a;  --brick-4: #1e7a36;
+    --stud-1:  #9be1ad;  --stud-2:  #66c47e;  --stud-3:  #39ac56;  --stud-4:  #226e36;
+    --pressed-1: #235c30; --pressed-2: #1a4624; --pressed-3: #102b16;
+    --shadow:    rgba(15,70,30,0.55);
+    --shadow-2:  rgba(15,70,30,0.32);
+    --rim:       rgba(20,90,40,0.45);
+    --bottom:    rgba(20,90,40,0.30);
+    --p-shadow:  rgba( 8,40,20,0.85);
+    --p-rim:     rgba(15,80,35,0.85);
+  }
+  .lego-brick[data-color="blue"] {
     --brick-1: #62a4d9;  --brick-2: #4f94cd;  --brick-3: #3d83bf;  --brick-4: #2c6fa6;
     --stud-1:  #98c9ed;  --stud-2:  #6cabe0;  --stud-3:  #4f94cd;  --stud-4:  #356f9f;
     --pressed-1: #2c5680; --pressed-2: #1f4368; --pressed-3: #142c4a;
@@ -80,7 +107,9 @@ const {
     --bottom:    rgba(20,55,90,0.30);
     --p-shadow:  rgba(10,30,55,0.85);
     --p-rim:     rgba(15,40,70,0.85);
+  }
 
+  .lego-gate {
     position: fixed;
     inset: 0;
     z-index: 9999;

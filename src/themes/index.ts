@@ -8,6 +8,7 @@ import { domainWarpingTheme } from './domain-warping';
 import { tennisTheme } from './tennis';
 import { fibersTheme } from './fibers';
 import { trianglesTheme } from './triangles';
+import { legoTheme } from './lego';
 
 // Export types
 export type { Theme, ThemeColors, ThemeConfig, ShaderColors, RGB } from './types';
@@ -22,6 +23,7 @@ const themes: Map<string, Theme> = new Map([
   ['tennis', tennisTheme],
   ['fibers', fibersTheme],
   ['triangles', trianglesTheme],
+  ['lego', legoTheme],
 ]);
 
 // All available themes (for dropdown population)
