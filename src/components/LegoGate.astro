@@ -1,0 +1,430 @@
+---
+// LegoGate.astro
+// Multi-step Lego-brick byte gate. Each step has a target byte and a color
+// from a fixed R → G → B sequence. Encode each target in binary (MSB top-left)
+// to advance. After the final step the gate either fades out (revealing what
+// is rendered beneath it) or redirects.
+
+interface Props {
+  targets?: number[];   // sequence of bytes to solve, default [8]
+  redirect?: string;    // optional URL to navigate to on final unlock
+  hints?: boolean;      // show TARGET + live binary HUD (default true)
+}
+
+const { targets = [8], redirect, hints = true } = Astro.props;
+
+// Color sequence is fixed: step 1 = red, step 2 = green, step 3+ = blue.
+// (R, G, B per user spec; further steps fall back to blue.)
+const COLORS = ['red', 'green', 'blue'] as const;
+const initialColor = COLORS[Math.min(0, COLORS.length - 1)];
+---
+
+<div
+  class="lego-gate"
+  id="lego-gate"
+  data-targets={JSON.stringify(targets)}
+  data-redirect={redirect ?? ''}
+  data-color={initialColor}
+  role="dialog"
+  aria-modal="true"
+  aria-label="Lego byte gate"
+>
+  <div class="lego-game">
+    <div class="lego-brick" id="lego-brick" role="group" aria-label="Lego byte input">
+      <button class="lego-stud" type="button" data-idx="0" aria-label="Bit 7"></button>
+      <button class="lego-stud" type="button" data-idx="1" aria-label="Bit 6"></button>
+      <button class="lego-stud" type="button" data-idx="2" aria-label="Bit 5"></button>
+      <button class="lego-stud" type="button" data-idx="3" aria-label="Bit 4"></button>
+      <button class="lego-stud" type="button" data-idx="4" aria-label="Bit 3"></button>
+      <button class="lego-stud" type="button" data-idx="5" aria-label="Bit 2"></button>
+      <button class="lego-stud" type="button" data-idx="6" aria-label="Bit 1"></button>
+      <button class="lego-stud" type="button" data-idx="7" aria-label="Bit 0"></button>
+    </div>
+    {hints && (
+      <div class="lego-hud" aria-live="polite">
+        <div class="lego-hud-row lego-hud-target">TARGET&nbsp;<span id="lego-target">{targets[0]}</span></div>
+        <div class="lego-hud-row lego-hud-current">
+          <span id="lego-bits">0000&nbsp;0000</span>
+          <span class="lego-hud-eq">=</span>
+          <span id="lego-dec">0</span>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+
+<style>
+  /* ---------------------------------------------------------------
+     PALETTES — each [data-color] sets the full set of color tokens
+     that the brick + studs read from. Swapping the data-color
+     attribute between steps cleanly re-skins the whole gate.
+     --------------------------------------------------------------- */
+  .lego-gate[data-color="red"] {
+    --brick-1: #e6856f;  --brick-2: #cd5e44;  --brick-3: #b04a30;  --brick-4: #8f3320;
+    --stud-1:  #f0a896;  --stud-2:  #e6856f;  --stud-3:  #c4583e;  --stud-4:  #8f3a23;
+    --pressed-1: #6e2b1c; --pressed-2: #58221a; --pressed-3: #361410;
+    --shadow:    rgba(70,20,15,0.55);
+    --shadow-2:  rgba(70,20,15,0.32);
+    --rim:       rgba(90,30,25,0.45);
+    --bottom:    rgba(90,30,25,0.30);
+    --p-shadow:  rgba(40,12, 8,0.85);
+    --p-rim:     rgba(80,25,20,0.85);
+  }
+  .lego-gate[data-color="green"] {
+    --brick-1: #66c47e;  --brick-2: #40bf60;  --brick-3: #2da04a;  --brick-4: #1e7a36;
+    --stud-1:  #9be1ad;  --stud-2:  #66c47e;  --stud-3:  #39ac56;  --stud-4:  #226e36;
+    --pressed-1: #235c30; --pressed-2: #1a4624; --pressed-3: #102b16;
+    --shadow:    rgba(15,70,30,0.55);
+    --shadow-2:  rgba(15,70,30,0.32);
+    --rim:       rgba(20,90,40,0.45);
+    --bottom:    rgba(20,90,40,0.30);
+    --p-shadow:  rgba( 8,40,20,0.85);
+    --p-rim:     rgba(15,80,35,0.85);
+  }
+  .lego-gate[data-color="blue"] {
+    --brick-1: #62a4d9;  --brick-2: #4f94cd;  --brick-3: #3d83bf;  --brick-4: #2c6fa6;
+    --stud-1:  #98c9ed;  --stud-2:  #6cabe0;  --stud-3:  #4f94cd;  --stud-4:  #356f9f;
+    --pressed-1: #2c5680; --pressed-2: #1f4368; --pressed-3: #142c4a;
+    --shadow:    rgba(15,40,70,0.55);
+    --shadow-2:  rgba(15,40,70,0.32);
+    --rim:       rgba(20,55,90,0.45);
+    --bottom:    rgba(20,55,90,0.30);
+    --p-shadow:  rgba(10,30,55,0.85);
+    --p-rim:     rgba(15,40,70,0.85);
+  }
+
+  .lego-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #0a0a0a;
+    display: grid;
+    place-items: center;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    color: #fff;
+  }
+
+  .lego-game {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(1.75rem, 4.5vmin, 3rem);
+  }
+
+  /* BRICK */
+  .lego-brick {
+    --cell: clamp(75px, 24vmin, 320px);
+    --cols: 4;
+    --rows: 2;
+
+    width:  calc(var(--cell) * var(--cols));
+    height: calc(var(--cell) * var(--rows));
+
+    display: grid;
+    grid-template-columns: repeat(var(--cols), var(--cell));
+    grid-template-rows:    repeat(var(--rows), var(--cell));
+
+    position: relative;
+    border-radius: calc(var(--cell) * 0.05);
+
+    background: linear-gradient(135deg,
+      var(--brick-1) 0%,
+      var(--brick-2) 45%,
+      var(--brick-3) 80%,
+      var(--brick-4) 100%);
+
+    box-shadow:
+      0 calc(var(--cell) * 0.16) calc(var(--cell) * 0.30) rgba(0,0,0,0.60),
+      0 calc(var(--cell) * 0.06) calc(var(--cell) * 0.10) rgba(0,0,0,0.45),
+      inset 0  1px 0 rgba(255,255,255,0.20),
+      inset 0 -1px 0 rgba(0,0,0,0.35);
+  }
+
+  /* STUD */
+  .lego-stud {
+    --d: calc(var(--cell) * 0.62);
+
+    width: var(--d);
+    height: var(--d);
+    border: 0;
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
+    place-self: center;
+    cursor: pointer;
+    outline: none;
+    position: relative;
+    -webkit-appearance: none;
+            appearance: none;
+
+    background: radial-gradient(circle at 32% 30%,
+      var(--stud-1)  0%,
+      var(--stud-2) 35%,
+      var(--stud-3) 70%,
+      var(--stud-4) 100%);
+
+    box-shadow:
+      calc(var(--d) * 0.03) calc(var(--d) * 0.07) calc(var(--d) * 0.08) var(--shadow),
+      calc(var(--d) * 0.05) calc(var(--d) * 0.12) calc(var(--d) * 0.14) var(--shadow-2),
+      inset 0 0 0 1.5px var(--rim),
+      inset 0 calc(var(--d) *  0.07) calc(var(--d) * 0.12) rgba(255,255,255,0.22),
+      inset 0 calc(var(--d) * -0.04) calc(var(--d) * 0.06) var(--bottom);
+
+    transition:
+      transform   420ms cubic-bezier(.34, 1.55, .50, 1),
+      box-shadow  420ms cubic-bezier(.34, 1.55, .50, 1),
+      background  420ms cubic-bezier(.34, 1.55, .50, 1);
+  }
+
+  .lego-stud:hover { transform: translateY(-1px); }
+
+  .lego-stud:focus-visible {
+    box-shadow:
+      0 0 0 3px rgba(255,255,255,0.50),
+      calc(var(--d) * 0.05) calc(var(--d) * 0.12) calc(var(--d) * 0.14) var(--shadow-2),
+      inset 0 0 0 1.5px var(--rim),
+      inset 0 calc(var(--d) * 0.07) calc(var(--d) * 0.12) rgba(255,255,255,0.22);
+  }
+
+  .lego-stud.pressed {
+    background: radial-gradient(circle at 50% 50%,
+      var(--pressed-1)  0%,
+      var(--pressed-2) 55%,
+      var(--pressed-3) 100%);
+    box-shadow:
+      0 0 0 0 rgba(0,0,0,0),
+      0 0 0 0 rgba(0,0,0,0),
+      inset 0 0 0 1.5px var(--p-rim),
+      inset 0 calc(var(--d) *  0.10) calc(var(--d) * 0.18) var(--p-shadow),
+      inset 0 calc(var(--d) *  0.04) calc(var(--d) * 0.06) var(--p-shadow);
+    transition:
+      transform   100ms cubic-bezier(.4, 0, 1, 1),
+      box-shadow  100ms cubic-bezier(.4, 0, 1, 1),
+      background  100ms cubic-bezier(.4, 0, 1, 1);
+  }
+
+  .lego-stud:active:not(.pressed) {
+    transform: translateY(2px);
+    transition: transform 70ms cubic-bezier(.4, 0, 1, 1);
+  }
+
+  /* HUD */
+  .lego-hud {
+    font-family: 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+    text-align: center;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.10em;
+    line-height: 1.7;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .lego-hud-row { white-space: nowrap; }
+
+  .lego-hud-target {
+    font-size: clamp(0.78rem, 1.6vmin, 1rem);
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+  }
+  .lego-hud-target #lego-target {
+    color: rgba(255,255,255,0.85);
+    font-weight: 700;
+    letter-spacing: 0.15em;
+  }
+  .lego-hud-current {
+    font-size: clamp(1.1rem, 2.6vmin, 1.7rem);
+    color: rgba(255,255,255,0.92);
+  }
+  .lego-hud-current .lego-hud-eq { margin: 0 0.65em; opacity: 0.4; }
+
+  /* ---------------------------------------------------------------
+     CYCLING — intermediate-step transition. Studs pulse, brick fades
+     out, JS swaps color/target while invisible, brick fades back in.
+     --------------------------------------------------------------- */
+  .lego-game.cycling .lego-stud {
+    animation: lego-stud-pulse 520ms cubic-bezier(.5, 0, .5, 1);
+  }
+  .lego-game.cycling .lego-stud:nth-child(2) { animation-delay:  40ms; }
+  .lego-game.cycling .lego-stud:nth-child(3) { animation-delay:  80ms; }
+  .lego-game.cycling .lego-stud:nth-child(4) { animation-delay: 120ms; }
+  .lego-game.cycling .lego-stud:nth-child(5) { animation-delay: 160ms; }
+  .lego-game.cycling .lego-stud:nth-child(6) { animation-delay: 200ms; }
+  .lego-game.cycling .lego-stud:nth-child(7) { animation-delay: 240ms; }
+  .lego-game.cycling .lego-stud:nth-child(8) { animation-delay: 280ms; }
+
+  .lego-game.cycling .lego-brick {
+    animation: lego-brick-cycle 1600ms cubic-bezier(.4, 0, .2, 1) forwards;
+  }
+
+  @keyframes lego-brick-cycle {
+    /* hold (0–800ms): studs pulse on top of normal brick */
+    0%, 50%   { transform: scale(1);   opacity: 1; filter: blur(0); }
+    /* fade out (800–1100ms) */
+    69%       { transform: scale(0.6) translateY(20px); opacity: 0; filter: blur(6px); }
+    /* hold invisible (1100–1250ms) — JS swap happens here */
+    78%       { transform: scale(0.6) translateY(20px); opacity: 0; filter: blur(6px); }
+    /* fade in (1250–1600ms) with new color */
+    100%      { transform: scale(1);   opacity: 1; filter: blur(0); }
+  }
+
+  /* ---------------------------------------------------------------
+     UNLOCKING — final-step animation: studs pulse, brick drops away,
+     entire gate fades. Then redirect or display:none in JS.
+     --------------------------------------------------------------- */
+  .lego-game.unlocking .lego-stud {
+    animation: lego-stud-pulse 520ms cubic-bezier(.5, 0, .5, 1);
+  }
+  .lego-game.unlocking .lego-stud:nth-child(2) { animation-delay:  40ms; }
+  .lego-game.unlocking .lego-stud:nth-child(3) { animation-delay:  80ms; }
+  .lego-game.unlocking .lego-stud:nth-child(4) { animation-delay: 120ms; }
+  .lego-game.unlocking .lego-stud:nth-child(5) { animation-delay: 160ms; }
+  .lego-game.unlocking .lego-stud:nth-child(6) { animation-delay: 200ms; }
+  .lego-game.unlocking .lego-stud:nth-child(7) { animation-delay: 240ms; }
+  .lego-game.unlocking .lego-stud:nth-child(8) { animation-delay: 280ms; }
+
+  @keyframes lego-stud-pulse {
+    0%   { transform: scale(1);    filter: brightness(1); }
+    45%  { transform: scale(1.18); filter: brightness(1.55) drop-shadow(0 0 14px rgba(255,255,255,0.55)); }
+    100% { transform: scale(1);    filter: brightness(1); }
+  }
+
+  .lego-game.unlocking .lego-brick {
+    animation: lego-brick-out 600ms 480ms cubic-bezier(.4, 0, .8, .2) forwards;
+  }
+  .lego-game.unlocking .lego-hud {
+    animation: lego-hud-out 400ms 480ms ease-out forwards;
+  }
+  @keyframes lego-brick-out {
+    to { transform: scale(0.6) translateY(20px); opacity: 0; filter: blur(6px); }
+  }
+  @keyframes lego-hud-out {
+    to { opacity: 0; transform: translateY(8px); }
+  }
+
+  .lego-gate.unlocking {
+    pointer-events: none;
+    animation: lego-gate-fade 500ms 700ms cubic-bezier(.4, 0, .2, 1) forwards;
+  }
+  @keyframes lego-gate-fade {
+    to { opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lego-stud, .lego-stud.pressed, .lego-stud:hover, .lego-stud:active,
+    .lego-game.cycling .lego-stud,
+    .lego-game.cycling .lego-brick,
+    .lego-game.unlocking .lego-stud,
+    .lego-game.unlocking .lego-brick,
+    .lego-game.unlocking .lego-hud,
+    .lego-gate.unlocking {
+      transition: none;
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  const COLORS = ['red', 'green', 'blue'] as const;
+
+  const gate     = document.getElementById('lego-gate') as HTMLElement;
+  const game     = gate.querySelector('.lego-game') as HTMLElement;
+  const brick    = document.getElementById('lego-brick') as HTMLElement;
+  const studs    = Array.from(brick.querySelectorAll<HTMLButtonElement>('.lego-stud'));
+  const decEl    = document.getElementById('lego-dec');     // null when hints=false
+  const bitsEl   = document.getElementById('lego-bits');    // null when hints=false
+  const targetEl = document.getElementById('lego-target');  // null when hints=false
+
+  const targets: number[] = JSON.parse(gate.dataset.targets || '[8]');
+  const redirect = gate.dataset.redirect || '';
+
+  let currentStep = 0;
+  let acceptingInput = true;
+  let unlocking = false;
+
+  // Lock body scroll while gate is up.
+  const prevBodyOverflow = document.body.style.overflow;
+  const prevHtmlOverflow = document.documentElement.style.overflow;
+  document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
+
+  // idx 0 (top-left) = MSB (bit 7); idx 7 (bottom-right) = LSB (bit 0).
+  function readByte(): number {
+    let v = 0;
+    studs.forEach((s, i) => {
+      if (s.classList.contains('pressed')) v |= 1 << (7 - i);
+    });
+    return v;
+  }
+
+  function fmtBits(v: number): string {
+    const b = v.toString(2).padStart(8, '0');
+    return b.slice(0, 4) + '\u00A0' + b.slice(4);
+  }
+
+  function tick(): void {
+    const v = readByte();
+    if (decEl)  decEl.textContent  = String(v);
+    if (bitsEl) bitsEl.textContent = fmtBits(v);
+    if (v === targets[currentStep]) advance();
+  }
+
+  function advance(): void {
+    if (currentStep === targets.length - 1) {
+      finalUnlock();
+    } else {
+      cycle();
+    }
+  }
+
+  function cycle(): void {
+    acceptingInput = false;
+    game.classList.add('cycling');
+
+    // Mid-cycle (~1180ms in to a 1600ms animation) the brick is invisible —
+    // safe to reset studs, advance the step, and swap the palette.
+    window.setTimeout(() => {
+      studs.forEach((s) => s.classList.remove('pressed'));
+      currentStep += 1;
+      gate.dataset.color = COLORS[Math.min(currentStep, COLORS.length - 1)];
+      if (targetEl) targetEl.textContent = String(targets[currentStep]);
+      if (decEl)    decEl.textContent    = '0';
+      if (bitsEl)   bitsEl.textContent   = '0000\u00A00000';
+    }, 1180);
+
+    window.setTimeout(() => {
+      game.classList.remove('cycling');
+      acceptingInput = true;
+    }, 1600);
+  }
+
+  function finalUnlock(): void {
+    if (unlocking) return;
+    unlocking = true;
+    acceptingInput = false;
+    game.classList.add('unlocking');
+    gate.classList.add('unlocking');
+
+    // pulse (~800ms) + brick-out (~1080ms) + gate-fade (700+500=1200ms);
+    // cleanup after 1250ms.
+    window.setTimeout(() => {
+      if (redirect) {
+        window.location.href = redirect;
+        return;
+      }
+      gate.style.display = 'none';
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    }, 1250);
+  }
+
+  brick.addEventListener('click', (e) => {
+    if (!acceptingInput || unlocking) return;
+    const stud = (e.target as HTMLElement).closest('.lego-stud');
+    if (!stud) return;
+    stud.classList.toggle('pressed');
+    tick();
+  });
+
+  tick();
+</script>

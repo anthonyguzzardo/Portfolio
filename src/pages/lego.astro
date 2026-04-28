@@ -1,185 +1,22 @@
 ---
-// /lego — gate page. Aerial overview of one 2x4 Lego brick.
-// Studs toggle between raised and pressed. Once a target pattern is matched,
-// the user unlocks the landing page. (Pattern logic comes next — for now this
-// is the visual scaffold and the toggle interaction.)
-import Layout from '../layouts/Layout.astro';
+// /lego — standalone play page using the same gate component as `/`.
+// On solve the brick drops out and the page fades to dark; refresh to play
+// again. (No redirect — `/` has its own gate.)
+import LegoGate from '../components/LegoGate.astro';
 ---
 
-<Layout
-  title="Lego Gate – Anthony Guzzardo"
-  description="Solve the brick to unlock the landing page."
->
-  <div class="stage">
-    <div class="brick" id="brick" role="group" aria-label="Lego brick puzzle">
-      <button class="stud" type="button" data-idx="0" aria-label="Stud 1"></button>
-      <button class="stud" type="button" data-idx="1" aria-label="Stud 2"></button>
-      <button class="stud" type="button" data-idx="2" aria-label="Stud 3"></button>
-      <button class="stud" type="button" data-idx="3" aria-label="Stud 4"></button>
-      <button class="stud" type="button" data-idx="4" aria-label="Stud 5"></button>
-      <button class="stud" type="button" data-idx="5" aria-label="Stud 6"></button>
-      <button class="stud" type="button" data-idx="6" aria-label="Stud 7"></button>
-      <button class="stud" type="button" data-idx="7" aria-label="Stud 8"></button>
-    </div>
-  </div>
-</Layout>
-
-<style is:global>
-  html, body {
-    overflow: hidden;
-    height: 100%;
-    overscroll-behavior: none;
-  }
-</style>
-
-<style>
-  .stage {
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    background: #0a0a0a;
-    display: grid;
-    place-items: center;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-  }
-
-  /* ---------------------------------------------------------------
-     BRICK — 2x4 grid of cells, each cell holds one stud. The brick
-     itself is a rounded rectangle with an upper-left lit gradient
-     and a soft drop shadow on the floor below it.
-     --------------------------------------------------------------- */
-  .brick {
-    --cell: clamp(80px, 11vmin, 140px);
-    --cols: 4;
-    --rows: 2;
-
-    width:  calc(var(--cell) * var(--cols));
-    height: calc(var(--cell) * var(--rows));
-
-    display: grid;
-    grid-template-columns: repeat(var(--cols), var(--cell));
-    grid-template-rows:    repeat(var(--rows), var(--cell));
-
-    position: relative;
-    border-radius: calc(var(--cell) * 0.05);
-
-    background:
-      linear-gradient(135deg,
-        #62a4d9 0%,
-        #4f94cd 45%,
-        #3d83bf 80%,
-        #2c6fa6 100%);
-
-    box-shadow:
-      /* drop shadow on the floor */
-      0 calc(var(--cell) * 0.16) calc(var(--cell) * 0.30) rgba(0,0,0,0.60),
-      0 calc(var(--cell) * 0.06) calc(var(--cell) * 0.10) rgba(0,0,0,0.45),
-      /* hairline highlight on the top edge of the brick */
-      inset 0  1px 0 rgba(255,255,255,0.20),
-      /* hairline shadow on the bottom edge */
-      inset 0 -1px 0 rgba(0,0,0,0.35);
-  }
-
-  /* ---------------------------------------------------------------
-     STUD — overhead circle on top of the brick. Drop shadow on the
-     brick surface gives it visible extrusion. Click toggles a
-     persistent .pressed state (puzzle pieces stay where you put them).
-     --------------------------------------------------------------- */
-  .stud {
-    --d: calc(var(--cell) * 0.62);
-
-    width: var(--d);
-    height: var(--d);
-    border: 0;
-    padding: 0;
-    margin: 0;
-    border-radius: 50%;
-    place-self: center;
-    cursor: pointer;
-    outline: none;
-    position: relative;
-    -webkit-appearance: none;
-            appearance: none;
-
-    background:
-      radial-gradient(circle at 32% 30%,
-        #98c9ed  0%,
-        #6cabe0 35%,
-        #4f94cd 70%,
-        #356f9f 100%);
-
-    box-shadow:
-      /* asymmetric drop shadow on the brick surface */
-      calc(var(--d) * 0.03) calc(var(--d) * 0.07) calc(var(--d) * 0.08) rgba(15,40,70,0.55),
-      calc(var(--d) * 0.05) calc(var(--d) * 0.12) calc(var(--d) * 0.14) rgba(15,40,70,0.32),
-      /* bevel ring at the perimeter */
-      inset 0 0 0 1.5px rgba(20,55,90,0.45),
-      /* top-face highlight */
-      inset 0 calc(var(--d) *  0.07) calc(var(--d) * 0.12) rgba(255,255,255,0.22),
-      /* bottom-rim soft shadow */
-      inset 0 calc(var(--d) * -0.04) calc(var(--d) * 0.06) rgba(20,55,90,0.30);
-
-    transition:
-      transform   420ms cubic-bezier(.34, 1.55, .50, 1),
-      box-shadow  420ms cubic-bezier(.34, 1.55, .50, 1),
-      background  420ms cubic-bezier(.34, 1.55, .50, 1);
-  }
-
-  .stud:hover {
-    transform: translateY(-1px);
-  }
-
-  .stud:focus-visible {
-    box-shadow:
-      0 0 0 3px rgba(255,255,255,0.50),
-      calc(var(--d) * 0.05) calc(var(--d) * 0.12) calc(var(--d) * 0.14) rgba(15,40,70,0.35),
-      inset 0 0 0 1.5px rgba(20,55,90,0.45),
-      inset 0 calc(var(--d) * 0.07) calc(var(--d) * 0.12) rgba(255,255,255,0.22);
-  }
-
-  /* PRESSED — persistent toggled state. Cylinder sits flush with the brick:
-     the drop shadow vanishes, the top face shifts to a deeper tone, and an
-     inset shadow makes it read as a depression. */
-  .stud.pressed {
-    background:
-      radial-gradient(circle at 50% 50%,
-        #2c5680  0%,
-        #1f4368 55%,
-        #142c4a 100%);
-    box-shadow:
-      0 0 0 0 rgba(0,0,0,0),
-      0 0 0 0 rgba(0,0,0,0),
-      inset 0 0 0 1.5px rgba(15,40,70,0.85),
-      inset 0 calc(var(--d) *  0.10) calc(var(--d) * 0.18) rgba(10,30,55,0.85),
-      inset 0 calc(var(--d) *  0.04) calc(var(--d) * 0.06) rgba(10,30,55,0.55);
-    transition:
-      transform   100ms cubic-bezier(.4, 0, 1, 1),
-      box-shadow  100ms cubic-bezier(.4, 0, 1, 1),
-      background  100ms cubic-bezier(.4, 0, 1, 1);
-  }
-
-  /* While the user is actively holding the mouse down on a not-yet-toggled
-     stud, give it a quick "going down" preview so the press feels reactive. */
-  .stud:active:not(.pressed) {
-    transform: translateY(2px);
-    transition:
-      transform 70ms cubic-bezier(.4, 0, 1, 1);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .stud, .stud.pressed, .stud:hover, .stud:active { transition: none; }
-  }
-</style>
-
-<script>
-  const brick = document.getElementById('brick')!;
-
-  // Toggle stud state on click. Persistent — puzzle pieces stay where put.
-  brick.addEventListener('click', (e) => {
-    const stud = (e.target as HTMLElement).closest('.stud');
-    if (!stud) return;
-    stud.classList.toggle('pressed');
-    // Future: read pattern, compare to target, redirect to '/' on match.
-  });
-</script>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <title>:: lego play ::</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #0a0a0a; }
+  </style>
+</head>
+<body>
+  <LegoGate targets={[8, 255, 115]} />
+</body>
+</html>
