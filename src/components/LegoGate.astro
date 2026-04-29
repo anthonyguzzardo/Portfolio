@@ -34,8 +34,13 @@ const {
       {(['MM', 'DD', 'YY'] as const).map((label, i) => {
         const color = (['red', 'green', 'blue'] as const)[i];
         return (
-          <div class="lego-slot">
+          <div class="lego-slot" data-color={color}>
             {hints && <span class="lego-label">{label}</span>}
+            <span
+              class="lego-value"
+              id={`lego-value-${label.toLowerCase()}`}
+              aria-live="polite"
+            >0</span>
             <div
               class="lego-brick"
               id={`lego-brick-${label.toLowerCase()}`}
@@ -149,6 +154,47 @@ const {
     letter-spacing: 0.18em;
     color: rgba(255,255,255,0.50);
     text-transform: uppercase;
+  }
+
+  /* Live decoded byte (0–255) shown above each brick. Tinted to match
+     the brick beneath so users can pair value <-> brick at a glance. */
+  .lego-value {
+    font-family: 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: clamp(2.75rem, 6.5vmin, 4.5rem);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    font-variant-numeric: tabular-nums;
+    min-width: 3ch;
+    text-align: center;
+    line-height: 1;
+    color: rgba(255,255,255,0.92);
+    transition: color 220ms ease, text-shadow 220ms ease;
+  }
+  .lego-slot[data-color="red"]   .lego-value { color: #f0a896; }
+  .lego-slot[data-color="green"] .lego-value { color: #9be1ad; }
+  .lego-slot[data-color="blue"]  .lego-value { color: #98c9ed; }
+
+  /* SOLVED — fires when a brick's byte equals its date component.
+     Brightens the number, adds a colored glow, and pops once. */
+  .lego-slot.solved .lego-value {
+    animation: lego-value-pop 420ms cubic-bezier(.34, 1.55, .50, 1);
+  }
+  .lego-slot.solved[data-color="red"]   .lego-value {
+    color: #ffd6c8;
+    text-shadow: 0 0 18px rgba(240,168,150,0.85), 0 0 4px rgba(240,168,150,0.55);
+  }
+  .lego-slot.solved[data-color="green"] .lego-value {
+    color: #d3f5de;
+    text-shadow: 0 0 18px rgba(155,225,173,0.85), 0 0 4px rgba(155,225,173,0.55);
+  }
+  .lego-slot.solved[data-color="blue"]  .lego-value {
+    color: #d6e9f7;
+    text-shadow: 0 0 18px rgba(152,201,237,0.85), 0 0 4px rgba(152,201,237,0.55);
+  }
+  @keyframes lego-value-pop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.28); }
+    100% { transform: scale(1); }
   }
 
   /* BRICK — sized so 3 fit comfortably side-by-side on desktop. */
@@ -298,7 +344,8 @@ const {
     animation: lego-brick-out 600ms 480ms cubic-bezier(.4, 0, .8, .2) forwards;
   }
   .lego-game.unlocking .lego-hud,
-  .lego-game.unlocking .lego-label {
+  .lego-game.unlocking .lego-label,
+  .lego-game.unlocking .lego-value {
     animation: lego-hud-out 400ms 480ms ease-out forwards;
   }
 
@@ -323,6 +370,8 @@ const {
     .lego-game.unlocking .lego-brick,
     .lego-game.unlocking .lego-hud,
     .lego-game.unlocking .lego-label,
+    .lego-game.unlocking .lego-value,
+    .lego-slot.solved .lego-value,
     .lego-gate.unlocking {
       transition: none;
       animation: none;
@@ -351,6 +400,9 @@ const {
   const bricks = (['mm', 'dd', 'yy'] as const)
     .map((c) => document.getElementById(`lego-brick-${c}`))
     .filter((el): el is HTMLElement => el !== null);
+
+  const valueEls = (['mm', 'dd', 'yy'] as const)
+    .map((c) => document.getElementById(`lego-value-${c}`));
 
   // Target = today's date in the visitor's local timezone unless an explicit
   // override was passed in via the `date` prop (data-date attribute).
@@ -397,6 +449,12 @@ const {
   function tick(): void {
     const bytes = bricks.map(readBrickByte);
     if (currentEl) currentEl.textContent = bytes.join('/');
+    bytes.forEach((b, i) => {
+      const el = valueEls[i];
+      if (!el) return;
+      el.textContent = String(b);
+      el.parentElement?.classList.toggle('solved', b === dateTarget[i]);
+    });
     if (bytes.every((v, i) => v === dateTarget[i])) unlock();
   }
 
