@@ -175,7 +175,8 @@ const {
   .lego-slot[data-color="blue"]  .lego-value { color: #98c9ed; }
 
   /* SOLVED — fires when a brick's byte equals its date component.
-     Brightens the number, adds a colored glow, and pops once. */
+     Brightens the number and lights up the brick with a colored glow
+     plus a single bounce. */
   .lego-slot.solved .lego-value {
     animation: lego-value-pop 420ms cubic-bezier(.34, 1.55, .50, 1);
   }
@@ -191,9 +192,27 @@ const {
     color: #d6e9f7;
     text-shadow: 0 0 18px rgba(152,201,237,0.85), 0 0 4px rgba(152,201,237,0.55);
   }
+
+  /* On solve, swap the brick's gradient + stud variables to a chrome/white
+     palette. Pressed studs keep their dark color so the binary pattern is
+     still readable on the white face. */
+  .lego-slot.solved .lego-brick {
+    animation: lego-brick-pop 460ms cubic-bezier(.34, 1.55, .50, 1);
+    background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 45%, #e0e0e0 80%, #c5c5c5 100%);
+    --stud-1: #ffffff;
+    --stud-2: #f5f5f5;
+    --stud-3: #e2e2e2;
+    --stud-4: #c8c8c8;
+  }
+
   @keyframes lego-value-pop {
     0%   { transform: scale(1); }
     45%  { transform: scale(1.28); }
+    100% { transform: scale(1); }
+  }
+  @keyframes lego-brick-pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.05); }
     100% { transform: scale(1); }
   }
 
@@ -372,6 +391,7 @@ const {
     .lego-game.unlocking .lego-label,
     .lego-game.unlocking .lego-value,
     .lego-slot.solved .lego-value,
+    .lego-slot.solved .lego-brick,
     .lego-gate.unlocking {
       transition: none;
       animation: none;
