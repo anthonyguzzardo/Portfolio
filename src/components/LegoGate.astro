@@ -383,6 +383,17 @@ const {
     to { opacity: 0; }
   }
 
+  /* Narrow viewports (iPhone et al.) — three 4-wide bricks must fit in
+     the viewport width, not vmin. Drop the cell floor and tighten gaps
+     so the row reads as one piece instead of overflowing. */
+  @media (max-width: 480px) {
+    .lego-brick { --cell: clamp(26px, 7.2vw, 60px); }
+    .lego-row   { gap: 0.5rem; }
+    .lego-game  { gap: 1.25rem; padding: 0 0.5rem; }
+    .lego-value { font-size: clamp(1.75rem, 9vw, 2.5rem); }
+    .lego-label { font-size: 0.7rem; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .lego-stud, .lego-stud.pressed, .lego-stud:hover, .lego-stud:active,
     .lego-game.unlocking .lego-stud,
