@@ -8,9 +8,12 @@ import LegoBackground from '../components/LegoBackground.astro';
 interface Props {
 	title: string;
 	description?: string;
+	// 'live'  = full animated theme background (default, used on the landing page)
+	// 'frosted' = theme blurred + dimmed behind content for readability on text-heavy pages
+	background?: 'live' | 'frosted';
 }
 
-const { title, description = 'Anthony Guzzardo - Full-stack Developer' } = Astro.props;
+const { title, description = 'Anthony Guzzardo - Full-stack Developer', background = 'live' } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -29,9 +32,10 @@ const { title, description = 'Anthony Guzzardo - Full-stack Developer' } = Astro
 			document.documentElement.classList.add('dark');
 		</script>
 	</head>
-	<body>
+	<body class={background === 'frosted' ? 'bg-frosted' : undefined}>
 		<ThemeBackground />
 		<LegoBackground />
+		{background === 'frosted' && <div class="bg-frost-scrim"></div>}
 		<Nav />
 
 		<slot />

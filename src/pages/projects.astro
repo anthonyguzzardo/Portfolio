@@ -1,21 +1,17 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout title="Projects - Anthony Guzzardo" description="Projects built by Anthony Guzzardo">
+<Layout title="Projects - Anthony Guzzardo" description="Projects built by Anthony Guzzardo" background="frosted">
 <main class="page-content">
   <div class="container">
 
 
     <div class="projects-grid">
-      <div class="project-card-horizontal">
-        <svg viewBox="0 0 60 50" fill="none" xmlns="http://www.w3.org/2000/svg" class="project-icon">
-          <circle cx="30" cy="25" r="18" fill="#e03b13" />
-          <rect x="24" y="16" width="12" height="18" fill="#fc702a" />
-          <polygon points="30,8 42,25 30,42" fill="#faa75a" />
-        </svg>
+      <div class="project-card-horizontal dealifier-card">
+        <img src="/images/dealifier/appIcon.png" alt="Dealifier App Icon" class="project-icon dealifier-icon" />
         <div class="project-info">
-          <h3>Dealifier</h3>
-          <p>Coming Soon</p>
+          <h3>Dealifier <span class="project-status">Coming Soon</span></h3>
+          <p>A location-based marketplace that drops every live local deal onto one map. Consumers filter by category, price, distance, and discount to surface only the offers worth the trip; businesses create deals in seconds and redeem them with QR. Full stack: iOS consumer and business apps, an Astro marketing site, and a Supabase backend with Stripe payments and vector search.</p>
           <a href="https://dealifier.com" target="_blank" class="project-link">
             Visit Site
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
@@ -23,21 +19,35 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <div class="project-card-horizontal">
-        <svg viewBox="0 0 60 50" fill="none" xmlns="http://www.w3.org/2000/svg" class="project-icon">
-          <circle cx="30" cy="25" r="20" fill="#0a1628" />
-          <circle cx="22" cy="20" r="3" fill="#4fc3f7" />
-          <circle cx="38" cy="30" r="3" fill="#81d4fa" />
-          <circle cx="30" cy="14" r="2" fill="#b3e5fc" />
-          <line x1="22" y1="20" x2="38" y2="30" stroke="#4fc3f7" stroke-width="0.8" opacity="0.6" />
-          <line x1="22" y1="20" x2="30" y2="14" stroke="#4fc3f7" stroke-width="0.8" opacity="0.6" />
-          <line x1="38" y1="30" x2="30" y2="14" stroke="#81d4fa" stroke-width="0.8" opacity="0.6" />
+      <div class="project-card-horizontal sfsg-card">
+        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="project-icon sfsg-icon">
+          <rect width="120" height="120" rx="24" fill="#07070a" />
+          {/* Wind lines — the rush of the fall */}
+          <g stroke="#ffb84d" stroke-width="1" stroke-linecap="round" opacity="0.25">
+            <line x1="26" y1="30" x2="26" y2="48" />
+            <line x1="92" y1="26" x2="92" y2="50" />
+            <line x1="38" y1="74" x2="38" y2="92" />
+            <line x1="84" y1="78" x2="84" y2="92" />
+          </g>
+          {/* The falling man — lifted from the atlas hero (viewBox 200x520) */}
+          <g fill="#ffb84d" transform="translate(42, 11) scale(0.19)">
+            <circle cx="105" cy="42" r="22" />
+            <path d="M 95 62 C 90 90, 85 130, 80 170 L 70 170 C 75 130, 80 90, 85 62 Z" />
+            <path d="M 85 75 C 60 60, 30 45, 5 55 L 3 48 C 28 35, 58 50, 83 68 Z" />
+            <path d="M 95 80 C 120 95, 155 120, 185 105 L 188 112 C 158 130, 122 105, 95 88 Z" />
+            <path d="M 80 100 C 75 130, 65 165, 55 195 C 50 205, 58 208, 65 200 C 70 175, 75 145, 80 115 Z" opacity="0.7" />
+            <path d="M 72 170 C 65 200, 55 240, 45 260 C 40 268, 48 272, 55 265 C 60 245, 68 210, 74 180 Z" opacity="0.5" />
+            <path d="M 78 165 C 70 210, 55 260, 40 310 C 35 330, 25 360, 20 380 L 12 378 C 18 358, 28 328, 33 308 C 48 258, 63 208, 70 168 Z" />
+            <path d="M 20 378 L 12 378 C 5 390, 2 400, 8 405 L 22 400 C 25 395, 24 388, 20 380 Z" />
+            <path d="M 82 168 C 90 220, 100 290, 110 360 C 115 400, 120 440, 118 470 L 108 468 C 110 438, 107 398, 102 358 C 92 288, 85 220, 76 170 Z" />
+            <path d="M 118 468 L 108 468 C 106 480, 108 490, 115 495 L 125 492 C 128 487, 125 478, 118 470 Z" />
+          </g>
         </svg>
         <div class="project-info">
           <h3>So Far So Good</h3>
-          <p>An interactive atlas of scientific knowledge. Starting with 188 NASA NIAC speculative aerospace projects, expanding into a full knowledge discovery platform with force-directed graphs, timelines, trending science discussions, and curated reading paths. Bloomberg terminal for space nerds.</p>
+          <p>A living atlas of scientific knowledge, built on one conviction: science doesn't have a knowledge problem, it has an infrastructure problem. It opens on 188 of NASA's wildest funded concepts and grows into connective tissue for the whole field. A queryable graph of claims and evidence. A graveyard of negative results. Curated reading paths. And Pulse, a live Bloomberg-style board of what space and science are talking about right now. The name is the falling man's mantra from <em>La Haine</em>: <span class="sfsg-mantra">jusqu'ici tout va bien</span>. The journey is the point.</p>
           <a href="https://hactenusbene.com" target="_blank" class="project-link">
-            Visit Site
+            Enter the atlas
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
           </a>
         </div>
@@ -62,7 +72,7 @@ import Layout from '../layouts/Layout.astro';
           </g>
         </svg>
         <div class="project-info">
-          <h3>Alice and Bob <span class="project-status">In Development</span></h3>
+          <h3>Alice <span class="project-status">In Development</span></h3>
           <p>A monastic daily journal designed as a longitudinal self-study. Deep journal sessions and calibration sessions establish a baseline and recognize patterns over years. Zero gamification. Largely a black box, not meant to gratify.</p>
           <a href="https://fweeo.com/showcase" target="_blank" class="project-link">
             Enter Alice
@@ -71,8 +81,8 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <div class="project-card-horizontal">
-        <img src="/images/PigSticker.png" alt="Rangley App Icon" class="project-icon" />
+      <div class="project-card-horizontal rangley-card">
+        <img src="/images/PigSticker.png" alt="Rangley App Icon" class="project-icon rangley-icon" />
         <div class="project-info">
           <h3>Rangley <span class="project-status">Shut Down</span></h3>
           <p>A location-based social meetup app that was built for iOS. End-to-end: SwiftUI frontend, Vapor backend, AWS deployment. Servers were shut down in March 2026.</p>
@@ -88,6 +98,12 @@ import Layout from '../layouts/Layout.astro';
 </main>
 
 <style is:global>
+  /* Give the first card clearance from the fixed navbar so it isn't
+     riding up tight against it. */
+  .projects-grid {
+    margin-top: 2.5rem;
+  }
+
   /* Alice card: a window into Alice's own aesthetic, not the portfolio
      boilerplate. Cream "monastic" palette + Cormorant / EB Garamond serif,
      lifted straight from the Alice design tokens. Reads as a quiet island
@@ -141,5 +157,148 @@ import Layout from '../layouts/Layout.astro';
     color: #7a5a44;
   }
   .alice-card .project-link:hover { color: #1a1a1a; }
+
+  /* So Far So Good card: a window into the atlas's own aesthetic, not the
+     portfolio boilerplate. Deep-space paper (#07070a), amber accent
+     (#ffb84d), and a serif display face — the exact design tokens from the
+     site. Rauschenberg-meets-JPL, a Bloomberg terminal for space nerds. */
+  .project-card-horizontal.sfsg-card {
+    background:
+      radial-gradient(140% 120% at 18% 0%, rgba(255, 184, 77, 0.10) 0%, transparent 55%),
+      #07070a;
+    border: 1px solid #25252d;
+    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.55);
+  }
+  .project-card-horizontal.sfsg-card:hover {
+    border-color: #8a5a1c;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6), 0 0 32px rgba(255, 184, 77, 0.10);
+  }
+
+  .sfsg-card .project-icon.sfsg-icon {
+    border: 1px solid #25252d;
+    background: #07070a;
+    box-shadow: 0 0 24px rgba(255, 184, 77, 0.12);
+  }
+
+  .sfsg-card .project-info h3 {
+    font-family: ui-serif, 'Iowan Old Style', 'Apple Garamond', Georgia, serif;
+    font-weight: 600;
+    color: #e8e6df;
+    letter-spacing: -0.01em;
+  }
+
+  .sfsg-card .project-info p {
+    color: #9a978c;
+    line-height: 1.65;
+  }
+  .sfsg-card .project-info p em {
+    color: #c8c5bc;
+    font-style: italic;
+  }
+  .sfsg-card .sfsg-mantra {
+    font-family: ui-serif, 'Iowan Old Style', 'Apple Garamond', Georgia, serif;
+    font-style: italic;
+    color: #ffb84d;
+  }
+
+  .sfsg-card .project-link {
+    font-family: ui-serif, 'Iowan Old Style', 'Apple Garamond', Georgia, serif;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #ffb84d;
+  }
+  .sfsg-card .project-link:hover { color: #e8e6df; }
+
+  /* Rangley card: a window into the app's own aesthetic — dark Japanese
+     purple surface (japDarkerPurple #3C177B), neon-pink accent (#FF007D),
+     white text hierarchy. A solid, opaque surface so copy stays readable
+     instead of the site background bleeding through. */
+  .project-card-horizontal.rangley-card {
+    background:
+      radial-gradient(120% 140% at 12% 0%, rgba(255, 0, 125, 0.16) 0%, transparent 55%),
+      #3C177B;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.45);
+  }
+  .project-card-horizontal.rangley-card:hover {
+    border-color: rgba(255, 0, 125, 0.5);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 34px rgba(255, 0, 125, 0.28);
+  }
+
+  .rangley-card .project-icon.rangley-icon {
+    border-radius: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 28px rgba(255, 0, 125, 0.3);
+  }
+
+  .rangley-card .project-info h3 {
+    color: #ffffff;
+  }
+
+  .rangley-card .project-info p {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  /* Neon-pink pill badge — replaces the grey global default */
+  .rangley-card .project-status {
+    background: rgba(255, 0, 125, 0.14);
+    color: #FF007D;
+    border: 1px solid rgba(255, 0, 125, 0.5);
+    border-radius: 999px;
+    opacity: 1;
+    box-shadow: 0 0 16px rgba(255, 0, 125, 0.25);
+  }
+
+  .rangley-card .project-link {
+    color: #FF007D;
+  }
+  .rangley-card .project-link:hover { color: #ffffff; }
+
+  /* Dealifier card: a window into the app's own aesthetic — Dealifier's
+     brand red (#C42224, light #FF5252) on a clean near-black surface,
+     lifted straight from the app's design tokens. Minimal, no decorative
+     shapes, a quiet red glow to echo the price-tag pin. */
+  .project-card-horizontal.dealifier-card {
+    background:
+      radial-gradient(120% 140% at 12% 0%, rgba(255, 82, 82, 0.14) 0%, transparent 55%),
+      #14161b;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.45);
+  }
+  .project-card-horizontal.dealifier-card:hover {
+    border-color: rgba(255, 82, 82, 0.5);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 34px rgba(196, 34, 36, 0.3);
+  }
+
+  .dealifier-card .project-icon.dealifier-icon {
+    /* The PNG already carries its own rounded black border, so let it show
+       in full (contain, no extra radius) instead of clipping the corners. */
+    border-radius: 0;
+    object-fit: contain;
+    box-shadow: none;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 22px rgba(196, 34, 36, 0.28));
+  }
+
+  .dealifier-card .project-info h3 {
+    color: #ffffff;
+  }
+
+  .dealifier-card .project-info p {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  /* Brand-red pill badge — replaces the grey global default */
+  .dealifier-card .project-status {
+    background: rgba(196, 34, 36, 0.16);
+    color: #FF5252;
+    border: 1px solid rgba(255, 82, 82, 0.5);
+    border-radius: 999px;
+    opacity: 1;
+    box-shadow: 0 0 16px rgba(196, 34, 36, 0.25);
+  }
+
+  .dealifier-card .project-link {
+    color: #FF5252;
+  }
+  .dealifier-card .project-link:hover { color: #ffffff; }
 </style>
 </Layout>

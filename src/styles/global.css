@@ -142,6 +142,49 @@ h3 {
 	gap: 1rem;
 }
 
+/* Larger, more substantial navbar on desktop / web app viewing */
+@media (min-width: 769px) {
+	.nav {
+		padding: 2.25rem 0;
+	}
+	.nav-glass-pill {
+		gap: 2.5rem;
+		padding: 1rem 1.75rem;
+	}
+	.nav-glass-pill .nav-logo,
+	.nav-glass-pill .nav-left > a:not(.nav-logo),
+	.nav-glass-pill .nav-right a {
+		padding: 0.65rem 1.25rem;
+	}
+	.nav-glass-pill .nav-logo,
+	.nav-glass-pill .nav-name {
+		font-size: 1.85rem;
+	}
+	.nav-glass-pill .nav-left > a:not(.nav-logo),
+	.nav-glass-pill .nav-right a {
+		font-size: 1.35rem;
+	}
+	.nav-location {
+		font-size: 0.95rem;
+		gap: 0.55rem;
+		padding: 0.3rem 0.7rem;
+	}
+	.nav-location .loc-track {
+		width: 2.2rem;
+		height: 1rem;
+	}
+	.nav-location .loc-plane {
+		font-size: 0.95rem;
+	}
+	/* Scale up the email + theme icons to match */
+	.nav-glass-pill .email-icon,
+	.nav-glass-pill .check-icon,
+	.nav-glass-pill .palette-icon {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+}
+
 /* ==========================================
    LIQUID GLASS PILL - The main nav capsule
    ========================================== */
@@ -337,7 +380,9 @@ h3 {
 	font-weight: 600;
 	font-size: 1.2rem;
 	display: flex;
-	align-items: baseline;
+	align-items: center;
+	flex-shrink: 0;
+	white-space: nowrap;
 	/* Base state for smooth theme transitions */
 	background: transparent;
 	padding: 0.5rem 1rem;
@@ -385,30 +430,45 @@ h3 {
 	position: relative;
 	display: inline-block;
 	width: 1.6rem;
-	height: 0.8rem;
-	border-bottom: 1px dashed currentColor;
+	height: 1em;
+	flex-shrink: 0;
+}
+
+/* Dashed flight line, vertically centered in the track */
+.nav-location .loc-track::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 50%;
+	border-top: 1px dashed currentColor;
 	opacity: 0.5;
 }
 
 .nav-location .loc-plane {
+	/* --plane-y: optical nudge to sit the glyph on the line.
+	   Positive = down, negative = up. This is the one knob to tweak. */
+	--plane-y: 0.06em;
 	position: absolute;
 	left: 0;
-	bottom: -0.15rem;
+	top: 50%;
 	font-size: 0.7rem;
 	line-height: 1;
+	transform: translate(0, calc(-50% + var(--plane-y)));
 	animation: loc-boomerang 3s ease-in-out infinite alternate;
 }
 
-/* Travel Chicago -> San Diego, then back, forever */
+/* Travel Chicago -> San Diego, then back, forever.
+   The vertical centering (-50% + nudge) is kept in every frame. */
 @keyframes loc-boomerang {
-	0%   { left: 0;    transform: translateX(0) scaleX(1); }
-	48%  { left: 100%; transform: translateX(-100%) scaleX(1); }
-	52%  { left: 100%; transform: translateX(-100%) scaleX(-1); }
-	100% { left: 0;    transform: translateX(0) scaleX(-1); }
+	0%   { left: 0;    transform: translate(0, calc(-50% + var(--plane-y))) scaleX(-1); }
+	48%  { left: 100%; transform: translate(-100%, calc(-50% + var(--plane-y))) scaleX(-1); }
+	52%  { left: 100%; transform: translate(-100%, calc(-50% + var(--plane-y))) scaleX(1); }
+	100% { left: 0;    transform: translate(0, calc(-50% + var(--plane-y))) scaleX(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.nav-location .loc-plane { animation: none; left: 100%; transform: translateX(-100%); }
+	.nav-location .loc-plane { animation: none; left: 100%; transform: translate(-100%, calc(-50% + var(--plane-y))); }
 }
 
 .logo-img {
@@ -1639,4 +1699,175 @@ footer {
 		width: 64px;
 		height: 64px;
 	}
+}
+
+/* ==========================================
+   FROSTED BACKGROUND (text-heavy pages)
+   Theme keeps running but is blurred + dimmed behind content so text stays
+   readable. Enabled per-page via <Layout background="frosted">. The landing
+   page stays 'live' (full effect). See Layout.astro.
+   ========================================== */
+body.bg-frosted .theme-background,
+body.bg-frosted .lego-bg {
+	filter: blur(36px) brightness(0.55) saturate(0.85);
+	/* scale up so the blur doesn't reveal transparent edges at the viewport */
+	transform: scale(1.18);
+	z-index: -2;
+}
+
+/* Dimming scrim between the blurred theme (z-index -2) and content (z-index 0) */
+.bg-frost-scrim {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background: rgba(10, 10, 10, 0.5);
+}
+
+/* ==========================================
+   SO-CAL MINIMAL PAGES (about / contact)
+   Short, airy, single sunset accent. Used by /about and /contact.
+   ========================================== */
+.socal {
+	max-width: 800px;
+	margin: 0 auto;
+	padding: 150px 2rem 6rem;
+}
+
+.socal .eyebrow {
+	font-size: 0.8rem;
+	letter-spacing: 0.25em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	margin-bottom: 1.25rem;
+}
+
+.socal h1 {
+	font-size: clamp(2.75rem, 6vw, 4.5rem);
+	line-height: 1.05;
+	letter-spacing: -0.03em;
+	color: var(--text-primary);
+	margin-bottom: 1.5rem;
+}
+
+.socal .lede {
+	font-size: 1.35rem;
+	line-height: 1.6;
+	color: var(--text-secondary);
+	max-width: 46ch;
+	margin-bottom: 1.25rem;
+}
+
+.socal .note {
+	font-size: 1.05rem;
+	line-height: 1.7;
+	color: var(--text-muted);
+	max-width: 50ch;
+	margin-bottom: 2.5rem;
+}
+
+.socal .link-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+}
+
+.socal .link-row a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.7rem 1.2rem;
+	border-radius: 999px;
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	background: rgba(255, 255, 255, 0.06);
+	color: #fff;
+	text-decoration: none;
+	font-size: 0.95rem;
+	transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.socal .link-row a:hover {
+	background: rgba(255, 255, 255, 0.12);
+	border-color: rgba(255, 255, 255, 0.4);
+	transform: translateY(-2px);
+}
+
+.socal .place {
+	margin-top: 2.5rem;
+	font-size: 0.9rem;
+	letter-spacing: 0.02em;
+	color: var(--text-muted);
+}
+
+/* SoCal sunset gradient accent for a single emphasized word */
+.sun {
+	background: linear-gradient(100deg, #ff9966 0%, #ff5e62 45%, #ff007d 80%, #ffb347 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+}
+
+/* Business entity (Mr. Fox, LLC) emphasis within so-cal copy */
+.socal .biz {
+	color: #fff;
+	font-weight: 600;
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+
+.socal a.biz:hover {
+	color: #ff8a5c;
+}
+
+/* Click-to-copy email (contact page) */
+.socal .email-copy {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.85rem;
+	margin-bottom: 2rem;
+	padding: 0.95rem 1.4rem;
+	border-radius: 14px;
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	background: rgba(255, 255, 255, 0.06);
+	color: #fff;
+	font-family: inherit;
+	font-size: 1.2rem;
+	cursor: pointer;
+	transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.socal .email-copy:hover {
+	background: rgba(255, 255, 255, 0.12);
+	border-color: rgba(255, 255, 255, 0.4);
+	transform: translateY(-2px);
+}
+
+.socal .email-copy-addr {
+	font-weight: 600;
+	letter-spacing: 0.01em;
+}
+
+.socal .email-copy-hint,
+.socal .email-copy-done {
+	font-size: 0.72rem;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.socal .email-copy-hint {
+	color: var(--text-muted);
+}
+
+.socal .email-copy-done {
+	display: none;
+	color: #4ade80;
+}
+
+.socal .email-copy.copied .email-copy-hint {
+	display: none;
+}
+
+.socal .email-copy.copied .email-copy-done {
+	display: inline;
 }

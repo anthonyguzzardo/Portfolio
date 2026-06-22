@@ -5,13 +5,14 @@ import Layout from '../layouts/Layout.astro';
 <Layout
 	title="Rangley - Meet People, Do Things"
 	description="Rangley was a location-based social meetup app for iOS. Servers shut down March 2026."
+	background="frosted"
 >
+	<div class="rangley-page">
 	<!-- Hero Section -->
 	<section class="rangley-hero">
 		<div class="container">
 			<div class="hero-content">
 				<img src="/images/RangleyIconV2.png" alt="Rangley" class="hero-app-icon"/>
-				<p class="project-status" style="margin-bottom: 1rem;">Shut Down — March 2026</p>
 				<h1 class="rangley-hero-title">Your Social Compass</h1>
 				<p class="rangley-hero-subtitle">Rangley was the fastest way to find spontaneous hangouts near you. No swiping. No small talk. Just real plans. Servers were shut down in March 2026.</p>
 			</div>
@@ -40,7 +41,7 @@ import Layout from '../layouts/Layout.astro';
 			<div class="feature-block">
 				<div class="feature-content">
 					<h3>See What's Happening</h3>
-					<p>Users could open the app and instantly see nearby activities — coffee, tennis, group runs, or just hanging out. Everything was location-based and happening in real-time.</p>
+					<p>Users could open the app and instantly see nearby activities: coffee, tennis, group runs, or just hanging out. Everything was location-based and happening in real-time.</p>
 				</div>
 				<div class="feature-visual">
 					<img src="/images/rangley/my_meets_sheet.png" alt="My Meets View" class="feature-img" />
@@ -98,5 +99,20 @@ import Layout from '../layouts/Layout.astro';
 			</div>
 		</div>
 	</section>
+
+	<!-- What's Next Section -->
+	<section class="rangley-cta">
+		<div class="container">
+			<div class="cta-content">
+				<h2 class="cta-heading">What Came Next</h2>
+				<p class="cta-subtitle">Rangley taught me how to ship a real product end-to-end — and what it takes to keep one alive. Those lessons rolled straight into my next build: <a href="https://dealifier.com" target="_blank" class="cta-link">Dealifier</a>.</p>
+				<a href="https://dealifier.com" target="_blank" class="btn-primary btn-large">
+					Visit Dealifier
+					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+				</a>
+			</div>
+		</div>
+	</section>
+	</div>
 
 </Layout>

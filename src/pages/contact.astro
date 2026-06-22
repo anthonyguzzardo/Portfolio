@@ -2,30 +2,41 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Contact - Anthony Guzzardo" description="Get in touch with Anthony Guzzardo for consulting, development, and business inquiries">
+<Layout title="Contact - Anthony Guzzardo" description="Get in touch with Anthony Guzzardo" background="frosted">
+	<main class="socal">
+		<p class="eyebrow">Contact</p>
+		<h1>Let's make something <span class="sun">good</span></h1>
 
-		<main class="page-content">
-			<div class="container">
-				<h1>Contact</h1>
-				
-				<h2>Let's Work Together</h2>
-				<p>Available for consulting, full-stack development, and iOS app projects. If you're building something interesting, let's talk.</p>
+		<button class="email-copy" id="email-copy" type="button" data-email="anthony@mrfoxco.com" aria-label="Copy email address">
+			<span class="email-copy-addr">anthony@mrfoxco.com</span>
+			<span class="email-copy-hint">Click to copy</span>
+			<span class="email-copy-done">Copied</span>
+		</button>
 
-				<h2>What I Can Help With</h2>
-				<ul>
-					<li><strong>iOS App Development</strong> — Native apps with SwiftUI, Vapor backends, and App Store deployment</li>
-					<li><strong>Full-Stack Web Applications</strong> — React, TypeScript, PostgreSQL, AWS infrastructure</li>
-					<li><strong>Technical Consulting</strong> — Architecture, scalability, and development strategy</li>
-					<li><strong>MVP Development</strong> — Take your idea from concept to working product</li>
-				</ul>
-
-				<h2>Get in Touch</h2>
-				<p><strong>Email:</strong> <a href="mailto:agguzzy91@gmail.com">agguzzy91@gmail.com</a></p>
-				<p><strong>Location:</strong> Chicago, Illinois</p>
-
-				<h2>Business Inquiries</h2>
-				<p>For partnership opportunities, investments, or to learn more about our projects and roadmap, reach out via email. I'm always interested in connecting with founders, investors, and companies building impactful products.</p>
-
-			</div>
-		</main>
+		<p class="place"><a class="biz" href="https://mrfoxco.com" target="_blank" rel="noopener">Mr. Fox, LLC</a> · San Diego, CA · fully remote</p>
+	</main>
 </Layout>
+
+<script>
+	const btn = document.getElementById('email-copy');
+	if (btn) {
+		btn.addEventListener('click', async () => {
+			const email = btn.dataset.email || '';
+			try {
+				await navigator.clipboard.writeText(email);
+			} catch {
+				// Fallback for older / insecure-context browsers
+				const ta = document.createElement('textarea');
+				ta.value = email;
+				ta.style.position = 'fixed';
+				ta.style.opacity = '0';
+				document.body.appendChild(ta);
+				ta.select();
+				document.execCommand('copy');
+				document.body.removeChild(ta);
+			}
+			btn.classList.add('copied');
+			setTimeout(() => btn.classList.remove('copied'), 1600);
+		});
+	}
+</script>
