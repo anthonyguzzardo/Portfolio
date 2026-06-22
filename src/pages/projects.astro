@@ -43,17 +43,31 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <div class="project-card-horizontal">
-        <svg viewBox="0 0 60 50" fill="none" xmlns="http://www.w3.org/2000/svg" class="project-icon">
-          <rect x="10" y="10" width="40" height="30" rx="4" fill="#1a1a2e" stroke="#e0e0e0" stroke-width="1" />
-          <line x1="15" y1="20" x2="45" y2="20" stroke="#555" stroke-width="0.5" />
-          <line x1="15" y1="26" x2="40" y2="26" stroke="#555" stroke-width="0.5" />
-          <line x1="15" y1="32" x2="35" y2="32" stroke="#555" stroke-width="0.5" />
+      <div class="project-card-horizontal alice-card">
+        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="project-icon alice-icon">
+          <rect width="120" height="120" rx="24" fill="#f5f2ed" />
+          <g stroke="#7a5a44" stroke-width="1" opacity="0.4">
+            <line x1="40" y1="44" x2="62" y2="34" />
+            <line x1="62" y1="34" x2="82" y2="52" />
+            <line x1="40" y1="44" x2="52" y2="70" />
+            <line x1="52" y1="70" x2="82" y2="52" />
+            <line x1="52" y1="70" x2="74" y2="84" />
+          </g>
+          <g fill="#7a5a44">
+            <circle cx="40" cy="44" r="3" />
+            <circle cx="62" cy="34" r="2.5" />
+            <circle cx="82" cy="52" r="3" />
+            <circle cx="52" cy="70" r="2.5" />
+            <circle cx="74" cy="84" r="3.5" />
+          </g>
         </svg>
         <div class="project-info">
-          <h3>Alice and Bob</h3>
-          <p>A monastic daily journal designed as a longitudinal self-study. Deep journal sessions and calibration sessions establish a baseline and recognize patterns over years. Zero gamification. Largely a black box — not meant to gratify.</p>
-          <span class="project-status">In Development</span>
+          <h3>Alice and Bob <span class="project-status">In Development</span></h3>
+          <p>A monastic daily journal designed as a longitudinal self-study. Deep journal sessions and calibration sessions establish a baseline and recognize patterns over years. Zero gamification. Largely a black box, not meant to gratify.</p>
+          <a href="https://fweeo.com/showcase" target="_blank" class="project-link">
+            Enter Alice
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
         </div>
       </div>
 
@@ -68,20 +82,64 @@ import Layout from '../layouts/Layout.astro';
           </a>
         </div>
       </div>
-
-      <div class="project-card-horizontal">
-        <img src="/images/spaceCalc.png" alt="Space Calculator Icon" class="project-icon" />
-        <div class="project-info">
-          <h3>Space Calculator</h3>
-          <p>A sassy calculator that judges your math. Built with React and deployed on Cloudflare Pages.</p>
-          <a href="https://alkaline-89z.pages.dev" target="_blank" class="project-link">
-            Try it
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-          </a>
-        </div>
-      </div>
     </div>
 
   </div>
 </main>
+
+<style is:global>
+  /* Alice card: a window into Alice's own aesthetic, not the portfolio
+     boilerplate. Cream "monastic" palette + Cormorant / EB Garamond serif,
+     lifted straight from the Alice design tokens. Reads as a quiet island
+     against the dark portfolio cards. */
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400;1,500&family=EB+Garamond:ital@0;1&display=swap');
+
+  .project-card-horizontal.alice-card {
+    background: #f5f2ed;
+    border: 1px solid #ccc5bc;
+    box-shadow: 0 4px 24px rgba(40, 30, 20, 0.12);
+  }
+  .project-card-horizontal.alice-card:hover {
+    background: #f0ece4;
+    border-color: #8a8580;
+    box-shadow: 0 18px 40px rgba(40, 30, 20, 0.18);
+  }
+
+  .alice-card .project-icon.alice-icon {
+    box-shadow: none;
+    border: 1px solid #e0dbd5;
+    background: #f5f2ed;
+  }
+
+  .alice-card .project-info h3 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+    color: #1a1a1a;
+    letter-spacing: 0.01em;
+  }
+
+  .alice-card .project-info p {
+    font-family: 'EB Garamond', Georgia, serif;
+    color: #6b6560;
+    font-size: 1.08rem;
+    line-height: 1.65;
+  }
+
+  .alice-card .project-status {
+    background: #e0dbd5;
+    color: #6b6560;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-weight: 500;
+  }
+
+  .alice-card .project-link {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.2rem;
+    color: #7a5a44;
+  }
+  .alice-card .project-link:hover { color: #1a1a1a; }
+</style>
 </Layout>

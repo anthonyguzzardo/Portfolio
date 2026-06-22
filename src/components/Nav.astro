@@ -10,7 +10,11 @@ const isHome = pathname === '/';
       <div class="nav-left">
       <a href="/" class="nav-logo">
         <span class="nav-name">Anthony Guzzardo</span>
-        <span class="nav-location">Chicago</span>
+        <span class="nav-location" title="Moved from Chicago to San Diego">
+          <span class="loc-from">Chicago</span>
+          <span class="loc-track" aria-hidden="true"><span class="loc-plane">✈</span></span>
+          <span class="loc-to">San Diego</span>
+        </span>
       </a>
       <a href="/projects" class={`nav-link-desktop ${pathname.startsWith('/projects') ? 'active' : ''}`}>Projects</a>
     </div>

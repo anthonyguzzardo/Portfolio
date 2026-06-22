@@ -354,6 +354,9 @@ h3 {
 }
 
 .nav-location {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
 	font-size: 0.65rem;
 	color: rgba(255, 255, 255, 0.6);
 	font-weight: 600;
@@ -364,6 +367,48 @@ h3 {
 	background: rgba(255, 255, 255, 0.1);
 	border-radius: 4px;
 	border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Old home, faded */
+.nav-location .loc-from {
+	opacity: 0.5;
+}
+
+/* Current home, emphasized */
+.nav-location .loc-to {
+	color: #fff;
+	opacity: 1;
+}
+
+/* The flight path the plane "boomerangs" along */
+.nav-location .loc-track {
+	position: relative;
+	display: inline-block;
+	width: 1.6rem;
+	height: 0.8rem;
+	border-bottom: 1px dashed currentColor;
+	opacity: 0.5;
+}
+
+.nav-location .loc-plane {
+	position: absolute;
+	left: 0;
+	bottom: -0.15rem;
+	font-size: 0.7rem;
+	line-height: 1;
+	animation: loc-boomerang 3s ease-in-out infinite alternate;
+}
+
+/* Travel Chicago -> San Diego, then back, forever */
+@keyframes loc-boomerang {
+	0%   { left: 0;    transform: translateX(0) scaleX(1); }
+	48%  { left: 100%; transform: translateX(-100%) scaleX(1); }
+	52%  { left: 100%; transform: translateX(-100%) scaleX(-1); }
+	100% { left: 0;    transform: translateX(0) scaleX(-1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.nav-location .loc-plane { animation: none; left: 100%; transform: translateX(-100%); }
 }
 
 .logo-img {
