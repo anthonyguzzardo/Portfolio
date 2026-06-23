@@ -1871,3 +1871,66 @@ body.bg-frosted .lego-bg {
 .socal .email-copy.copied .email-copy-done {
 	display: inline;
 }
+
+/* ==========================================
+   MOBILE / iPHONE TUNING
+   ========================================== */
+@media (max-width: 768px) {
+	/* Kill any horizontal scroll from wide elements or the scaled frosted bg */
+	html, body {
+		overflow-x: hidden;
+	}
+
+	/* So-cal pages: tighter top clearance, breathing side padding */
+	.socal {
+		padding: 110px 1.5rem 4.5rem;
+	}
+
+	.socal h1 {
+		font-size: clamp(2.4rem, 11vw, 3.25rem);
+	}
+
+	.socal .lede {
+		font-size: 1.2rem;
+	}
+
+	.socal .note {
+		font-size: 1.02rem;
+	}
+
+	/* Email button: full-width, stacked, address can never overflow */
+	.socal .email-copy {
+		width: 100%;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.35rem;
+		font-size: 1rem;
+	}
+
+	.socal .email-copy-addr {
+		font-size: 1.15rem;
+		max-width: 100%;
+		word-break: break-all;
+	}
+
+	/* CTA pills go full-width for easy thumbs */
+	.socal .link-row {
+		width: 100%;
+	}
+
+	.socal .link-row a {
+		flex: 1;
+		justify-content: center;
+	}
+}
+
+/* Projects page: a touch less top gap under the fixed nav on phones */
+@media (max-width: 768px) {
+	.page-content {
+		padding-top: 96px;
+	}
+
+	.projects-grid {
+		gap: 1.5rem;
+	}
+}
