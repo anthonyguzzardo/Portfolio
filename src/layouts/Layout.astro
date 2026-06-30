@@ -24,6 +24,7 @@ const { title, description = 'Anthony Guzzardo - Full-stack Developer', backgrou
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		<slot name="head" />
 		<script is:inline>
 			// Load saved theme preference for initial render (prevents flash)
 			const savedTheme = localStorage.getItem('portfolio-theme') || 'domain-warping';

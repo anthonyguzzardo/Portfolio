@@ -2,6 +2,9 @@
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout title="Projects - Anthony Guzzardo" description="Projects built by Anthony Guzzardo" background="frosted">
+<link slot="head" rel="preconnect" href="https://fonts.googleapis.com" />
+<link slot="head" rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link slot="head" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400;1,500&family=EB+Garamond:ital@0;1&display=swap" />
 <main class="page-content">
   <div class="container">
 
@@ -107,8 +110,7 @@ import Layout from '../layouts/Layout.astro';
   /* Alice card: a window into Alice's own aesthetic, not the portfolio
      boilerplate. Cream "monastic" palette + Cormorant / EB Garamond serif,
      lifted straight from the Alice design tokens. Reads as a quiet island
-     against the dark portfolio cards. */
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400;1,500&family=EB+Garamond:ital@0;1&display=swap');
+     against the dark portfolio cards. (Fonts loaded via <link> in <head>.) */
 
   .project-card-horizontal.alice-card {
     background: #f5f2ed;

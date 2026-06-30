@@ -1,10 +1,30 @@
 ---
-// ProjectCarousel.astro - Infinite scrolling text carousel
+// ProjectCarousel.astro - Infinite scrolling text carousel (desktop),
+// static tap list (mobile). Project data is shared from src/data/projects.ts
+// so both presentations always reflect the same names.
+import { projects } from '../data/projects';
+
+// The mobile tap list omits the Mr. Fox brand tile (carousel-only).
+const listProjects = projects.filter((p) => !p.isImage);
 ---
 
 <div class="carousel-section">
   <canvas id="carousel-canvas"></canvas>
 </div>
+
+<ul class="carousel-list">
+  {listProjects.map((p) => (
+    <li>
+      <a
+        href={p.link}
+        target={p.link.startsWith('http') ? '_blank' : undefined}
+        rel={p.link.startsWith('http') ? 'noopener' : undefined}
+      >
+        <span>{p.display}</span>
+      </a>
+    </li>
+  ))}
+</ul>
 
 <style>
   .carousel-section {
@@ -27,15 +47,69 @@
     pointer-events: auto;
   }
 
+  /* Desktop shows the animated canvas; the tap list is mobile-only. */
+  .carousel-list {
+    display: none;
+  }
+
   @media (max-width: 768px) {
+    /* Swap the animated carousel for a clean, legible tap list. */
     .carousel-section {
-      height: 120px;
+      display: none;
+    }
+
+    .carousel-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      list-style: none;
+      margin: 8rem auto 0;
+      padding: 0 1.25rem;
+      max-width: 460px;
+      width: 100%;
+    }
+
+    .carousel-list li {
+      margin: 0;
+    }
+
+    .carousel-list a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.05rem 1.3rem;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(10, 10, 10, 0.45);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 1.4rem;
+      letter-spacing: -0.01em;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+    }
+
+    .carousel-list a::after {
+      content: '\2192'; /* arrow */
+      font-weight: 400;
+      font-size: 1.2rem;
+      opacity: 0.45;
+    }
+
+    .carousel-list a:active {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: scale(0.99);
     }
   }
 </style>
 
 <script>
   import * as THREE from 'three';
+  import { projects } from '../data/projects';
 
   // ============================================
   // TYPES
@@ -57,16 +131,8 @@
     project: Project;
   }
 
-  // ============================================
-  // DATA
-  // ============================================
-  const projects: Project[] = [
-    { name: 'DEALIFIER', link: 'https://dealifier.com' },
-    { name: 'FOX', link: '/', isImage: true, imagePath: '/images/MrFoxSittingLite.png' },
-    { name: 'SO FAR SO GOOD', link: 'https://hactenusbene.com' },
-    { name: 'ALICE', link: 'https://fweeo.com/showcase' },
-    { name: 'RANGLEY', link: '/rangley' },
-  ];
+  // Project data is imported from src/data/projects.ts (shared with the
+  // mobile tap list rendered above).
 
   // ============================================
   // THEME HELPERS
